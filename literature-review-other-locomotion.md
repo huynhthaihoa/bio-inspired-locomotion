@@ -1,5 +1,7 @@
 # Literature review: locomotion types not yet in `state-estimation-simulations`
 
+(Plus, in §3, real robots from the CTU Computational Robotics Lab that map onto docs the repo already has.)
+
 First pass, 2026-10-19. Goal: decide which bio-inspired / hybrid / switched locomotion type could become the next doc, and record what the literature actually says about **state estimation** for each. To be checked and deepened later.
 
 ## How to read this
@@ -33,6 +35,8 @@ Searched `README.md` and `docs/` on 2026-10-19.
 | Swimming (fish) | Thin: tail-beat disturbance described, not modeled in a filter | snippet | Weak |
 | Perching | Thin: contact described as a hybrid change; no estimator found | snippet | Weak |
 | Adhesive climbing | None found: only detachment control | snippet | Weak |
+
+Real robots for types the repo already covers (inchworm, hexapod): §3.
 
 ## 2. Per type
 
@@ -166,13 +170,72 @@ Searched `README.md` and `docs/` on 2026-10-19.
 
 **Gap:** no state-estimation paper for adhesive climbers found. A related general result (legged robots, not climbing): foot-slip level correlates with InEKF error, r ≈ 0.68 (arXiv 2601.18569, snippet).
 
-## 3. Shortlist for a next doc
+## 3. Real robots for types the repo already covers: CTU Computational Robotics Lab
+
+Robots from the Computational Robotics Laboratory, Czech Technical University in Prague (<https://comrob.fel.cvut.cz/robots/>). Added 2026-10-19. Unlike §2, these are **existing** types in the repo (inchworm, hexapod), so the question is what each real robot adds to the existing docs.
+
+**Evidence:** the three papers below were **read in full** from the lab's PDFs. Robot pages were read through a summarizer and are thin (most list no gait, sensors or papers). Anything marked *inference* is mine, not the authors'.
+
+### 3.1 Inchworm robot (feeds the inchworm doc and the friction doc)
+
+Robot page: <https://comrob.fel.cvut.cz/robots/inchworm.html> (3D-printed, snake-like, "inchworm-inspired locomotion" with "flexible scales", Dynamixel XM-430; no sensors or papers listed). The two papers below are not linked from the page; I found them by search. A third robot on the index, **MinchW** ("Magnetic Inchworm"), has a page with only a name and a description line; nothing else is documented, so it is not reviewed.
+
+**What switches:** anchor (support) ↔ slide, repeated per gait phase: the same switch as `inchworm_zupt_ekf.md`, but the anchor is held by **friction** (passive anisotropic scales), not by a known-stationary segment.
+
+**Papers**
+- Kubík, J., Rišková, A., & Faigl, J. *Inchworm-like Robot Locomotion using Off-the-Shelf 3D-printable Anisotropic Friction Pads*. File name suggests AMAM 2025; the PDF text does not name the venue (**verify**). **read (full text)**. <https://comrob.fel.cvut.cz/papers/amam25inchworm.pdf>
+  - 4 DoF; four Dynamixel XM430-W350-R servos on PETG brackets; scales 3D-printed in TPE (FiberFlex 40D), 7 mm long, 0.25 mm thick, 1.75 mm spacing, 45° angle. Motivation: replace electromagnet or suction anchoring (iCrawl, pipe robots) with snake-skin friction anisotropy.
+  - Three hand-tuned gaits: **sliding** (extend/contract, anisotropy only), **balancing** (adds centre-of-mass shifts to load the anchoring pad), **stepping** (adds pad-up/pad-down on rigid bumpers).
+  - Terrains (forward/backward static friction): foam (≈1.2 / 1.4), artificial grass (≈0.75 / 1.4), PETG (≈0.2 / 0.2), and 5° and 10° slopes on foam. 10 trials of 30 s each.
+  - Results: sliding fails to anchor on smooth PETG and sticks on foam; balancing and stepping approach their expected speed on all terrains. On slopes the front pad slips back slightly at the start of retraction. Cost of transport from servo currents. **No state estimation.**
+- Kubík, J. & Faigl, J. *Adaptive Friction-based Inchworm-like Locomotion*. File name suggests ICRA 2026; the text I read does not name the venue (**verify**). **read (full text)**. <https://comrob.fel.cvut.cz/papers/icra26looper.pdf>
+  - 6 DoF (can turn); turning via a discrete-step bicycle model, R = L / tan(φ), L = l_min, φ = 2θ_steering.
+  - **Slip sensing:** a laser-mouse sensor (PMW3610DM-SUDU, LM18-LSI lens) embedded in each contact pad, read over SPI every 10 ms at 1200 CPI. It reports relative XY displacement and a surface-quality metric. The back pad is read during extension, the front pad during contraction.
+  - **Slip detection:** a displacement above d_thr = 20 ticks (0.42 mm) is slip; below it is attributed to sensor noise and elastic scale bending (a "heuristic filter").
+  - **Adaptation:** on slip, shorten the maximum extension so more weight can be shifted onto the anchoring pad (larger support angle).
+  - Results: adaptive ≈ offline-tuned gaits, better on some terrains; 75% reliability on the high-friction terrain, outperformed by the table-tuned gait on PETG (authors hypothesize PETG's sub-millimetre print structure causes tracking errors). Evaluation ground truth: active 3D motion capture (PTI Phoenix VZK10K) at ≈45 Hz, path smoothed with a third-order Savitzky-Golay filter.
+  - **Authors' stated future work:** "integrating optical data with motor measurements (position and velocity) and on-board IMU measurements through Kalman filtering to improve reliability."
+
+**Link to the repo (inference, not framed this way by the authors):**
+- An anchored pad should be stationary, so the pad's displacement sensor is a **velocity-zero measurement**, as in `inchworm_zupt_ekf.md`. Their fixed threshold plays the role of the gating the doc studies (when to trust "v = 0"); Kalman fusion is the step they list as future work.
+- The scales are passive anisotropic friction (forward < backward), the same family as `friction_anisotropic_ekf.md`'s pad (the doc cites snake belly scales). Here the anisotropy is in the contact *direction*, while the doc's pad has anisotropic *noise* tied to the body frame.
+- Open: how much unmodeled slip enters between sensor reads (10 ms) and whether the threshold behaves like the doc's σ_zupt.
+
+### 3.2 HAntR hexapod (under the hexapod family)
+
+Robot page: <https://comrob.fel.cvut.cz/robots/hantr.html> (in-house six-legged robot, 4 DoF per leg, AX-12A servos; no sensors listed on the page, but the paper below has them). Related platforms on the lab's index (pages only, no estimation content): **PhantomX** (retired Robotis-kit hexapod; cameras incl. Intel RealSense T265; papers on exploration with the T265 and traversability learning), **SCARAB II/III** and the **DARPA Sub-T hexapod** (in-house hexapods, 18 DoF, T265 + D435 cameras; papers on exploration and traversability), **HEBI Daisy** (commercial hexapod, 18 DoF).
+
+**What switches:** which legs are in stance vs swing (statically stable gaits such as tripod); the same switch as `hexapod_gait_ekf.md`.
+
+**Paper**
+- Čížek, P., Zoula, M., & Faigl, J. (2021). *Design, Construction, and Rough-Terrain Locomotion Control of Novel Hexapod Walking Robot with Four Degrees of Freedom per Leg*. IEEE Access, 9, 17866-17881. doi:10.1109/ACCESS.2021.3053492. **read (full text)**. <https://comrob.fel.cvut.cz/papers/access21hantr.pdf>
+  - Design and control paper (not an estimation paper): over an hour of locomotion with a payload of 85% of its weight; maximum crawled distance per second 87% of its length; weight distributed actively across the stance legs.
+  - **Sensors:**
+    - Servo **position feedback** (Dynamixel AX-12A): the **only** foot-contact sensing. Contact is declared when the commanded joint position θ_des and the measured θ_real differ by more than a fixed threshold e_thld (method from Faigl & Čížek, *Adaptive locomotion control of hexapod walking robot for traversing rough terrains with position feedback only*, Robotics and Autonomous Systems 116 (2019) 136-147, ref. [23] of the paper; no force or tactile sensors).
+    - An **AHRS** (Xsens MTi-30, 400 Hz) feeds the locomotion controller; the controller samples a gravity vector for body pose and inclination control.
+    - Voltage and current sampled at 500 Hz (power and endurance).
+    - Evaluation only: OptiTrack motion capture (6-DoF pose, 30 Hz, slope experiment) and a Leica TS-16 robotic total station (3-DoF position, 10 Hz, rough terrain; speed computed from it).
+  - **No onboard camera and no pose filter** in this paper; the T265 appears in the lab's other hexapod papers.
+
+**Link to the repo (inference):**
+- `hexapod_gait_ekf.md` studies contact-detection timing jitter (`--detect-time-noise-std`); HAntR's position-error threshold is a real detector of that kind. The paper does not report its timing error.
+- The lab's T265-based hexapod exploration papers localize with a tracking camera, while the repo's hexapod docs estimate from leg kinematics and an IMU. That contrast is a possible doc section; not read here beyond the PhantomX page's list.
+- The same lab wrote the CPG phase-estimator paper in §2.6 (Szadkowski, Prágr & Faigl, 2021); the DARPA Sub-T page lists it. The paper text does not say which robot it used, only "a six-legged hexapod".
+
+### 3.3 Other robots on the index
+
+Not relevant to switched locomotion, or too little documented (pages read through a summarizer):
+- Arms and hands: HEBI Lily (1, 2, hand), HEBI Daisy hand, UR5.
+- Not described on their pages: Mobot (empty page), Marvin (XL-320 servos, retired, no locomotion details).
+- Not opened: Husky, Hunter SE, Hotwing EVO 1200, Bormatec Maja XL (names only on the index).
+
+## 4. Shortlist for a next doc
 
 1. **Hopping:** peer-reviewed salted-KF result on an ASLIP hopper with an uncertain touchdown guard; builds directly on `hybrid_saltation_ekf.md` (bounce → spring stance + uncertain ground).
 2. **CPG / gait-phase estimation:** addresses the "known schedule" assumption every locomotion doc makes; literature is split between robotics (CPG) and prosthetics (EKF).
 3. **Biped:** reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first.
 
-## 4. To check later
+## 5. To check later
 
 - [ ] Read the Payne et al. hopper derivation reference ([8] in their paper) and Poulakakis & Grizzle (ASLIP).
 - [ ] Find biped work that models impacts in the estimator.
@@ -180,6 +243,10 @@ Searched `README.md` and `docs/` on 2026-10-19.
 - [ ] Get full citations for the CWRKF and four-wheel-legged papers.
 - [ ] Search adaptive-oscillator phase estimation for legged robots.
 - [ ] Fish / perching / climbing: one targeted search each before discarding.
+- [ ] CTU: confirm the venues of the two inchworm papers (file names suggest AMAM 2025 and ICRA 2026; the PDFs do not state them) and look for a longer version.
+- [ ] CTU: read Faigl & Čížek (Robotics and Autonomous Systems 116 (2019) 136-147, ref. [23] of the HAntR paper) for the position-feedback contact detector's timing behaviour.
+- [ ] CTU: read the T265-based hexapod exploration paper (Bayer & Faigl, ECMR 2019) for the camera-vs-leg-odometry contrast.
+- [ ] CTU: check whether the inchworm's displacement sensor could be framed as a zero-velocity measurement (a small extension of the inchworm doc?).
 
 ## Sources
 
@@ -208,3 +275,7 @@ Searched `README.md` and `docs/` on 2026-10-19.
 - Climbing detachment control: <https://www.mdpi.com/2076-3417/11/13/5860/xml>
 - SFU MENRVA climbing robots: <https://www.sfu.ca/menrva/some-projects/past-research-projects/climbing-robots.html>
 - Foot slip vs InEKF error: <https://arxiv.org/pdf/2601.18569>
+- CTU Computational Robotics Lab robots: <https://comrob.fel.cvut.cz/robots/> · Inchworm <https://comrob.fel.cvut.cz/robots/inchworm.html> · MinchW <https://comrob.fel.cvut.cz/robots/michnworm.html> · HAntR <https://comrob.fel.cvut.cz/robots/hantr.html> · PhantomX <https://comrob.fel.cvut.cz/robots/phantom.html> · SCARAB <https://comrob.fel.cvut.cz/robots/scarab2.html> · DARPA Sub-T <https://comrob.fel.cvut.cz/robots/darpa.html> · Daisy <https://comrob.fel.cvut.cz/robots/daisy.html>
+- Kubík, Rišková, Faigl (inchworm, friction pads): <https://comrob.fel.cvut.cz/papers/amam25inchworm.pdf>
+- Kubík, Faigl (adaptive inchworm): <https://comrob.fel.cvut.cz/papers/icra26looper.pdf>
+- Čížek, Zoula, Faigl (HAntR): <https://comrob.fel.cvut.cz/papers/access21hantr.pdf> · <https://doi.org/10.1109/ACCESS.2021.3053492>

@@ -1,0 +1,9 @@
+*.dat
+__pycache__
+# *.jpg
+# *.png
+# *.tiff
+# *.mp4
+# *.MOV
+# *webm
+.venv

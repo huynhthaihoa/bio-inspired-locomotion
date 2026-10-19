@@ -7,4 +7,3 @@ __pycache__
 # *.MOV
 # *webm
 .venv
-third_party/*

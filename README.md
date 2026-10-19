@@ -2,13 +2,13 @@
 
 Notes and figures for understanding **bio-inspired / hybrid / switched locomotion**: robots whose motion switches between modes (anchored or moving, foot down or up, before or after a bounce), and what each switch means for state estimation.
 
-It builds on the docs and simulations of [`state-estimation-simulations`](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations), included here as a git submodule in `third_party/`.
+It builds on the docs and simulations of [`state-estimation-simulations`](https://github.com/huynhthaihoa/state-estimation-simulations), included here as a git submodule in `third_party/`.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
-| [study-guide-hybrid-locomotion.md](study-guide-hybrid-locomotion.md) | How to read the locomotion docs of `state-estimation-simulations`: a "what switches?" frame, one mental picture and GIF per doc, experiments to predict then run, reading habits. |
+| [study-guide-hybrid-locomotion.md](study-guide-hybrid-locomotion.md) | How to read the locomotion docs of `state-estimation-simulations`: a "what switches?" frame, one mental picture per doc with one or two GIFs, experiments to predict then run, reading habits. |
 | [literature-review-other-locomotion.md](literature-review-other-locomotion.md) | First-pass literature review of locomotion types **not yet** in that repo (hopping, biped, wheel-legged, snake, flapping, CPG phase, fish, perching, climbing), with evidence levels (read vs snippet), corrected claims and a to-check list. One GIF per type. |
 | [figures/](figures/) | The GIFs and the scripts that make them. |
 
@@ -32,7 +32,7 @@ uv sync
 
 Already cloned without `--recurse-submodules`? Run `git submodule update --init`.
 
-The submodule in `third_party/state-estimation-simulations` is **pinned to a commit** (the one the GIFs were generated from). To bump it: `git -C third_party/state-estimation-simulations pull`, regenerate the seven simulation GIFs, and commit the new pin together with them. The study guide's experiments run inside that folder (it has its own `pyproject.toml`).
+The submodule in `third_party/state-estimation-simulations` is **pinned to a commit** (the one the GIFs were generated from). To bump it: `git submodule update --remote third_party/state-estimation-simulations`, regenerate the seven simulation GIFs, and commit the new pin together with them. The study guide's experiments run inside that folder (it has its own `pyproject.toml`).
 
 ## Regenerate the GIFs
 

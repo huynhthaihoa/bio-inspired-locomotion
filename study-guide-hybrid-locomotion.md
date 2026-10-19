@@ -1,25 +1,26 @@
 # Study guide: hybrid/switched locomotion docs
 
-Personal notes for reading the [`state-estimation-simulations`](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations) locomotion docs. Update as understanding improves.
+Personal notes for reading the [`state-estimation-simulations`](https://github.com/huynhthaihoa/state-estimation-simulations) locomotion docs. Update as understanding improves.
 
-Docs: 
-- [hybrid_saltation_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hybrid_saltation_ekf.md) 
-- [invariant_saltation_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/invariant_saltation_ekf.md)
-- [inchworm_zupt_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md)
-- [friction_anisotropic_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/friction_anisotropic_ekf.md) 
-- [hexapod_gait_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hexapod_gait_ekf.md)
-- [hexapod_contact_inekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hexapod_contact_inekf.md)
+Docs (**EKF** = extended Kalman filter):
+
+- [hybrid_saltation_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hybrid_saltation_ekf.md)
+- [invariant_saltation_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/invariant_saltation_ekf.md)
+- [inchworm_zupt_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md)
+- [friction_anisotropic_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/friction_anisotropic_ekf.md)
+- [hexapod_gait_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hexapod_gait_ekf.md)
+- [hexapod_contact_inekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hexapod_contact_inekf.md)
 
 ## 1. One frame for all of them
 
-A legged or crawling robot switches mode: anchored/moving, foot down/up, before/after a bounce. Each doc asks what the filter should do at that switch. Ask of every doc: **what switches?**
+A legged or crawling robot switches mode: anchored/moving, foot down/up, before/after a bounce. Each doc asks what the filter should do at that switch. Ask of each doc: **what switches?** (Friction is the no-switch control.)
 
 | What switches | What changes | Doc |
 | --- | --- | --- |
-| **The state itself** | Velocity jumps (bounce); the covariance must be carried through the jump | hybrid_saltation, invariant_saltation |
-| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another | inchworm (ZUPT; ZARU in §5) |
-| **Which sensors you have** | Planted feet = velocity measurements; the gait sets how many | hexapod_gait, hexapod_contact |
-| (no switch) | Motion noise depends on direction | friction_anisotropic |
+| **The state itself** | Velocity jumps (bounce); the covariance must be carried through the jump | hybrid_saltation_ekf, invariant_saltation_ekf |
+| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another | inchworm_zupt_ekf (**ZUPT**, zero-velocity update; **ZARU**, zero angular-rate update, §5) |
+| **Which sensors you have** | Planted feet = velocity measurements; the gait sets how many | hexapod_gait_ekf, hexapod_contact_inekf |
+| (no switch) | Motion noise depends on direction | friction_anisotropic_ekf |
 
 Most confusion comes from mixing up which of the three rows applies.
 
@@ -46,7 +47,7 @@ Most confusion comes from mixing up which of the three rows applies.
 
   ![Hexapod gaits: tripod, ripple, wave](figures/hexapod_gaits.gif)
 
-- **Hexapod contact InEKF:** nothing the robot senses tells it where north is, so yaw is unobservable. A good filter keeps reporting large yaw uncertainty instead of becoming confident.
+- **Hexapod contact InEKF (invariant EKF):** nothing the robot senses tells it where north is, so yaw is unobservable. A good filter keeps reporting large yaw uncertainty instead of becoming confident.
 
   ![3D hexapod, tripod gait](figures/hexapod_3d.gif)
 
@@ -55,13 +56,13 @@ Most confusion comes from mixing up which of the three rows applies.
 
 ## 3. Predict first, then run
 
-Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-19.
+Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-19. Results are judged by **NEES** (normalized estimation error squared): averaged over trials, it equals the state dimension (2 for a 2-state filter) when the filter is consistent. Add `--out <file>.png` to save a figure instead of opening a window.
 
 ```bash
 # Saltation: contact detected late or noisily? (doc §8)
 uv run python use_numpy/saltation_matrix_ekf.py --detect-time-noise-std 0.01
 
-# Inchworm: is NEES close to 2 when the process noise covers the ramps? (doc §3)
+# Inchworm: is NEES inside [1.83, 2.18] when the process noise covers the ramps? Which policy still fails? (doc §3)
 uv run python use_numpy/inchworm_zupt_ekf.py --process-noise-std 0.5
 # ...and with no motion at all?
 uv run python use_numpy/inchworm_zupt_ekf.py --v-extend 0
@@ -69,14 +70,14 @@ uv run python use_numpy/inchworm_zupt_ekf.py --v-extend 0
 # Inchworm §5: does ZARU still matter if the body never turns?
 uv run python use_numpy/inchworm_zupt_zaru_ekf.py --omega-extend 0 --process-noise-std 0.5 --process-noise-ang-std 1.5
 
-# Friction: make the pad isotropic (equal grip/slip noise). Does the heading-aware filter still win?
+# Friction: make the pad isotropic (equal grip/slip noise). Do the three policies now tie?
 uv run python use_numpy/friction_anisotropic_ekf.py --sigma-slip 0.02
 
 # Hexapod gait: faster slip on another leg. Does the per-foot test still catch it?
 uv run python use_numpy/hexapod_gait_ekf.py --slip-leg R1 --slip-speed 0.3
 ```
 
-When the result surprises you, that's usually the doc's point. Example: at its defaults, the inchworm filter that applies ZUPT correctly is less well calibrated than the one that never applies it.
+When the result surprises you, that's usually the doc's point. Example: at its defaults, the inchworm filter that applies ZUPT correctly is less well calibrated than the one that never applies it in the cruise window (NEES 16.4 vs 10.8); in the anchor window they are equal (6.1 vs 6.0).
 
 | Experiment | My prediction | Result | Takeaway |
 | --- | --- | --- | --- |
@@ -84,11 +85,11 @@ When the result surprises you, that's usually the doc's point. Example: at its d
 
 ## 4. Reading habits
 
-1. **Watch the GIF before the math.** Each doc embeds one from `assets/`. For each method, find the moment it goes wrong.
-2. **Read NEES as honesty.** Above the expected value = overconfident; below = cautious. Every doc here judges success this way.
+1. **Watch the GIF before the math.** Each doc embeds one or two from `assets/`. For each method, find the moment it goes wrong.
+2. **Read NEES as honesty.** Above the expected value = overconfident; below = conservative (underconfident). Every doc here judges success this way.
 3. **For any surprising number, find the doc's control run** (no motion, noise covering the ramps, ...), which isolates the cause.
 4. **Keep three lists while reading: switch → assumption → consequence.** That is the content of this set of docs.
 
 ## 5. Open questions / notes
 
-- 
+- (add notes here)

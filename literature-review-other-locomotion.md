@@ -281,7 +281,7 @@ Not relevant to switched locomotion, or too little documented (pages read throug
 2. **CPG / gait-phase estimation:** addresses the "known schedule" assumption every locomotion doc makes; literature is split between robotics (CPG) and prosthetics (EKF).
 3. **Biped:** reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first.
 
-Not a new doc but an extension: inchworm slip-sensor ZUPT from the CTU robot (§3.1).
+Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_ekf.py`: add anchor slip, and gate ZUPT by a measured pad displacement instead of the known schedule (CTU robot, §3.1).
 
 ## 5. To check later
 

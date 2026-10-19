@@ -1,0 +1,15 @@
+[project]
+name = "bio-inspired-locomotion"
+version = "0.1.0"
+description = "Study notes, literature review and motion GIFs for bio-inspired / hybrid / switched locomotion."
+readme = "README.md"
+requires-python = ">=3.11"
+# numpy + matplotlib (with Pillow, the GIF writer) are used by the figure scripts;
+# scipy is needed by the sibling state-estimation-simulations modules that
+# make_locomotion_gifs.py imports.
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "pillow",
+]

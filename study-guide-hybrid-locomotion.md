@@ -1,14 +1,14 @@
 # Study guide: hybrid/switched locomotion docs
 
-Personal notes for reading the `state-estimation-simulations` locomotion docs. Update as understanding improves.
+Personal notes for reading the [`state-estimation-simulations`](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations) locomotion docs. Update as understanding improves.
 
 Docs: 
-- [hybrid_saltation_ekf](../state-estimation-simulations/docs/filtering/hybrid_saltation_ekf.md) 
-- [invariant_saltation_ekf](../state-estimation-simulations/docs/filtering/invariant_saltation_ekf.md)
-- [inchworm_zupt_ekf](../state-estimation-simulations/docs/filtering/inchworm_zupt_ekf.md)
-- [friction_anisotropic_ekf](../state-estimation-simulations/docs/filtering/friction_anisotropic_ekf.md) 
-- [hexapod_gait_ekf](../state-estimation-simulations/docs/filtering/hexapod_gait_ekf.md)-
-- [hexapod_contact_inekf](../state-estimation-simulations/docs/filtering/hexapod_contact_inekf.md)
+- [hybrid_saltation_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hybrid_saltation_ekf.md) 
+- [invariant_saltation_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/invariant_saltation_ekf.md)
+- [inchworm_zupt_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md)
+- [friction_anisotropic_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/friction_anisotropic_ekf.md) 
+- [hexapod_gait_ekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hexapod_gait_ekf.md)
+- [hexapod_contact_inekf](https://github.com/huynhthaihoa/robotics-pose-estimation-simulations/blob/main/docs/filtering/hexapod_contact_inekf.md)
 
 ## 1. One frame for all of them
 
@@ -51,11 +51,11 @@ Most confusion comes from mixing up which of the three rows applies.
   ![3D hexapod, tripod gait](figures/hexapod_3d.gif)
 
 
-*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. Regenerate: `uv run --project state-estimation-simulations python tasks/figures/make_locomotion_gifs.py [name]` from the repo root.*
+*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. Regenerate: `uv run python figures/make_locomotion_gifs.py [name]` from this repo's root.*
 
 ## 3. Predict first, then run
 
-Write down the expected outcome before running. Run from `state-estimation-simulations/`. Flags checked on 2026-10-19.
+Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-19.
 
 ```bash
 # Saltation: contact detected late or noisily? (doc §8)

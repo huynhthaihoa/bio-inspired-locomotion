@@ -1,5 +1,5 @@
 '''
-GIFs for tasks/literature-review-other-locomotion-*.md: one short animation per
+GIFs for literature-review-other-locomotion.md: one short animation per
 locomotion type that is NOT yet in state-estimation-simulations.
 
 Unlike make_locomotion_gifs.py, nothing here comes from a repo simulation (there
@@ -11,8 +11,8 @@ is none for these types):
 Each GIF names what switches and the estimation point the literature review
 attributes to its source.
 
-Usage (from /home/hoa/Desktop/codebase):
-    uv run --project state-estimation-simulations python tasks/figures/make_other_locomotion_gifs.py [name ...]
+Usage (from the bio-inspired-locomotion repo root):
+    uv run python figures/make_other_locomotion_gifs.py [name ...]
 '''
 import os
 import sys

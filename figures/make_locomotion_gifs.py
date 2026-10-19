@@ -1,5 +1,5 @@
 '''
-Motion-only GIFs for the study guide (tasks/study-guide-hybrid-locomotion-*.md):
+Motion-only GIFs for the study guide (study-guide-hybrid-locomotion.md):
 one short animation per locomotion type in state-estimation-simulations, showing
 only the TRUE motion (no filters, no estimates).
 
@@ -15,9 +15,10 @@ tracking:
   hexapod_gaits     hexapod_gait_ekf.simulate_body_trajectory + simulate_feet
   hexapod_3d        hexapod_contact_inekf.simulate_trial
 
-Usage (from the repo root /home/hoa/Desktop/codebase):
-    uv run --project state-estimation-simulations python tasks/figures/make_locomotion_gifs.py          # all
-    uv run --project state-estimation-simulations python tasks/figures/make_locomotion_gifs.py bounce   # one
+Usage (from the bio-inspired-locomotion repo root; needs the simulations: the git
+submodule (`git submodule update --init`), a sibling checkout, or STATE_ESTIMATION_SIM_DIR):
+    uv run python figures/make_locomotion_gifs.py          # all
+    uv run python figures/make_locomotion_gifs.py bounce   # one
 '''
 import os
 import sys
@@ -32,7 +33,16 @@ from matplotlib import animation
 from matplotlib.patches import Ellipse, Polygon
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SIM = os.path.join(os.path.dirname(os.path.dirname(HERE)), "state-estimation-simulations")
+# Where the simulations live, first match wins: $STATE_ESTIMATION_SIM_DIR, the pinned git submodule,
+# then a sibling checkout next to this repo.
+ROOT = os.path.dirname(HERE)
+_candidates = [os.environ.get("STATE_ESTIMATION_SIM_DIR"),
+               os.path.join(ROOT, "third_party", "state-estimation-simulations"),
+               os.path.join(os.path.dirname(ROOT), "state-estimation-simulations")]
+SIM = next((c for c in _candidates if c and os.path.isdir(os.path.join(c, "use_numpy"))), None)
+if SIM is None:
+    sys.exit("state-estimation-simulations not found. Run `git submodule update --init` in the repo root, "
+             "or set STATE_ESTIMATION_SIM_DIR.")
 sys.path[:0] = [os.path.join(SIM, "use_numpy"), SIM]
 
 FPS, DPI = 15, 70

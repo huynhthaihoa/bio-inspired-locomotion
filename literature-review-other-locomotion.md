@@ -281,7 +281,7 @@ Not relevant to switched locomotion, or too little documented (pages read throug
 2. **CPG / gait-phase estimation:** addresses the "known schedule" assumption every locomotion doc makes; literature is split between robotics (CPG) and prosthetics (EKF).
 3. **Biped:** reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first.
 
-Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_ekf.py`: add anchor slip, and gate ZUPT by a measured pad displacement instead of the known schedule (CTU robot, §3.1).
+Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_ekf.py`: add anchor slip, and gate ZUPT by a measured pad displacement instead of the known schedule (CTU robot, §3.1). **Done as a toy:** [`inchworm_slip_gate_ekf.py` and doc §6](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md#6-side-extension-anchor-slip-and-a-measured-gate). In it the schedule alone is badly overconfident during slip (slip-window NEES about 47), a sensor veto on top of the schedule removes most of that (about 3.5), and a sensor-only gate leaks at the ends of each extend phase. A real pad sensor reads only while its pad is on the ground, which matches the schedule-and-sensor policy, not the sensor-only ones (my reading, not the authors').
 
 ## 5. To check later
 
@@ -295,7 +295,7 @@ Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_e
 - [ ] Read Rišková, Kubík & Faigl, *Automated evaluation of anisotropic friction pads* (AMAM 2025, ref. [21] of the ICRA paper), for the friction doc.
 - [ ] CTU: read Faigl & Čížek (Robotics and Autonomous Systems 116 (2019) 136-147, ref. [23] of the HAntR paper) for the position-feedback contact detector's timing behavior.
 - [ ] CTU: read the T265-based hexapod exploration paper (Bayer & Faigl, ECMR 2019) for the camera-vs-leg-odometry contrast.
-- [ ] CTU: sketch a short inchworm-doc section framing the pad displacement sensor as a measurement-gated ZUPT.
+- [x] CTU: sketch a short inchworm-doc section framing the pad displacement sensor as a measurement-gated ZUPT (done as doc §6, 2026-10-19; a 1D toy with a body-mounted sensor, not the CTU robot's pad sensor).
 
 ## Sources
 

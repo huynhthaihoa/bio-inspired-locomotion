@@ -18,7 +18,7 @@ A legged or crawling robot switches mode: anchored/moving, foot down/up, before/
 | What switches | What changes | Doc |
 | --- | --- | --- |
 | **The state itself** | Velocity jumps (bounce); the covariance must be carried through the jump | hybrid_saltation_ekf, invariant_saltation_ekf |
-| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another | inchworm_zupt_ekf (**ZUPT**, zero-velocity update; **ZARU**, zero angular-rate update, §5) |
+| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another | inchworm_zupt_ekf (**ZUPT**, zero-velocity update; **ZARU**, zero angular-rate update, §5; anchor slip and a pad-sensor gate, §6) |
 | **Which sensors you have** | Planted feet = velocity measurements; the gait sets how many | hexapod_gait_ekf, hexapod_contact_inekf |
 | (no switch) | Motion noise depends on direction | friction_anisotropic_ekf |
 
@@ -69,6 +69,9 @@ uv run python use_numpy/inchworm_zupt_ekf.py --v-extend 0
 
 # Inchworm §5: does ZARU still matter if the body never turns?
 uv run python use_numpy/inchworm_zupt_zaru_ekf.py --omega-extend 0 --process-noise-std 0.5 --process-noise-ang-std 1.5
+
+# Inchworm §6: the anchor slips; does a pad sensor's veto fix the schedule? (compare the slip-window NEES; add --p-slip 0 as the control)
+uv run python use_numpy/inchworm_slip_gate_ekf.py
 
 # Friction: make the pad isotropic (equal grip/slip noise). Do the three policies now tie?
 uv run python use_numpy/friction_anisotropic_ekf.py --sigma-slip 0.02

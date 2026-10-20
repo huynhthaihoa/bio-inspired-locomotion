@@ -43,10 +43,10 @@ def gif_hopping():
     segs.insert(0, [0.0, first_td, alpha])  # initial flight: leg already at the touchdown angle
     frames = rec[::200][: int(round(T_show / 0.02))]  # 0.02 s per frame
 
-    fig, ax = plt.subplots(figsize=(8.5, 3.9))
-    fig.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.27)
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.90, bottom=0.33)
     ax.set_aspect("equal")
-    ax.set(ylim=(-0.25, 1.5), xlabel="x (m)", ylabel="height (m)")
+    ax.set(ylim=(-0.25, 1.5), xlabel="x (m, camera follows the mass)", ylabel="height (m)")
     ax.set_xlim(-2, 4)
     ax.set_title("Hopping (spring-loaded inverted pendulum): ballistic flight ↔ spring stance", fontsize=10)
     ax.axhspan(-0.25, 0.0, color="saddlebrown", alpha=0.3, lw=0)
@@ -58,10 +58,12 @@ def gif_hopping():
     toe, = ax.plot([], [], "o", ms=5, color="black")
     mass = ax.add_patch(Circle((0, 0), 0.09, color=ON, ec="black", zorder=5))
     st = status(ax, "", "black")
-    caption(fig, "m = 80 kg, leg spring k = 20 kN/m, rest length 1 m, touchdown angle 66°; released at 1.05 m with 5 m/s "
-                 "forward speed. Touchdown when the toe reaches the ground; lift-off when the leg is back at rest length "
-                 "(the leg is swung forward during flight). Payne, Kong & Johnson (IROS 2022) filter this hybrid "
-                 "system when the ground height (the touchdown guard) is uncertain.", kind="sim")
+    caption(fig, "m = 80 kg, leg spring k = 20 kN/m, rest length 1 m, touchdown angle 66° below horizontal; released at "
+                 "1.05 m with 5 m/s forward speed. Touchdown when the toe (black dot) reaches the ground; lift-off when "
+                 "the leg is back at rest length (the leg is swung forward during flight). Mass colour: teal = flight, "
+                 "yellow = stance; grey curve = mass path. Pink band: ground-height uncertainty, drawn for illustration "
+                 "(the simulated ground is at 0 m). Payne, Kong & Johnson (IROS 2022) filter this hybrid system when "
+                 "the touchdown guard (ground height) is uncertain.", kind="sim")
 
     def update(i):
         tt, x, y, mode, xf = frames[i]
@@ -107,8 +109,9 @@ def gif_biped():
     hip = ax.add_patch(Circle((0, 0), 0.05, color=BODY, zorder=5))
     st = status(ax, "", "black")
     cs = ax.text(0.02, 0.95, "", transform=ax.transAxes, va="top", fontsize=9, family="monospace")
-    caption(fig, "Filled foot = foot in contact. Hartley et al. (RSS 2018) add a contact point to the filter state at touchdown "
-                 "and remove it at lift-off; yaw and absolute position stay unobservable.")
+    caption(fig, "Black foot and dark leg = in contact; white foot and grey leg = in the air. The readout lists the contact "
+                 "points currently in the filter state: Hartley et al. (RSS 2018) add one at touchdown and remove it at "
+                 "lift-off; yaw and absolute position stay unobservable.")
 
     labels = [ax.text(0, 0, "", ha="center", va="top", fontsize=8, fontweight="bold") for _ in range(2)]
 
@@ -173,9 +176,10 @@ def gif_wheel_legged():
     wheels = [ax.add_patch(Circle((0, 0), 0.1, fill=False, ec="black", lw=2, zorder=5)) for _ in range(2)]
     spokes = [ax.plot([], [], color="black", lw=1.2, zorder=6)[0] for _ in range(2)]
     st = status(ax, "", "black")
-    caption(fig, "In wheel mode, wheel odometry is a cheap velocity measurement until a wheel slips; in leg mode the "
-                 "wheels stop and leg kinematics take over. Zhu et al. (2025) run an interacting-multiple-model Kalman "
-                 "filter on the wheel motion, then fuse leg motion in an error-state KF.")
+    caption(fig, "Grey block = obstacle; each spoke shows wheel rotation, which stops while that wheel is lifted. In wheel "
+                 "mode, wheel odometry is a cheap velocity measurement until a wheel slips (no slip is drawn here); in "
+                 "leg mode, leg kinematics take over for the lifted wheel. Zhu et al. (2025) run an "
+                 "interacting-multiple-model Kalman filter on the wheel motion, then fuse leg motion in an error-state KF.")
 
     # per-frame state, precomputed: each wheel's lift, and its rolling angle (accumulated only while on the ground)
     bxs = -0.2 + 4.8 * np.arange(n) / (n - 1)

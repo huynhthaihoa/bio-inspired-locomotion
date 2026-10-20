@@ -30,19 +30,21 @@ def gif_snake():
     ax.set_xticks(np.arange(-1, 4.1, 0.5))  # ground ruler: ticks/grid stay fixed in the world
     ax.grid(axis="x", color="0.85", lw=0.8)
     ax.set_axisbelow(True)
-    ax.set_title("Snake robot (lateral undulation): the body shape changes all the time", fontsize=10)
+    ax.set_title("Snake robot (lateral undulation): body frame from all modules vs from the head module", fontsize=10)
     body, = ax.plot([], [], "-o", color=BODY, ms=4, lw=3)
     vc = [ax.plot([], [], color=c, lw=2.5)[0] for c in ("tab:red", "tab:green")]
     mf = [ax.plot([], [], color=c, lw=1.5, ls="--")[0] for c in ("tab:red", "tab:green")]
-    ax.plot([], [], color="0.3", lw=2.5, label="virtual chassis frame (averaged over all modules)")
+    ax.plot([], [], color="0.3", lw=2.5, label="virtual chassis frame (from all modules)")
     ax.plot([], [], color="0.3", lw=1.5, ls="--", label="frame fixed to the head module")
     ax.legend(loc="lower left", fontsize=8, frameon=False)
     ax.annotate("", xy=(0.97, 0.9), xytext=(0.85, 0.9), xycoords="axes fraction",
                 arrowprops=dict(arrowstyle="->", color="0.3"))
     ax.text(0.84, 0.9, "motion", transform=ax.transAxes, ha="right", va="center", fontsize=8, color="0.3")
-    caption(fig, "Rollinson, Buchan & Choset (IROS 2011): estimating pitch and roll in a body frame aligned with the "
-                 "virtual chassis (solid) beats a frame fixed to one module (dashed), because it separates shape change "
-                 "from motion through the world.")
+    caption(fig, "Top view. Each frame has an x-axis (red, forward) and a y-axis (green, left). Solid: frame from all "
+                 "modules; dashed: frame fixed to the head module. The head frame swings with the head (about ±34°); "
+                 "the chassis frame stays within about ±3°. Rollinson, Buchan & Choset (IROS 2011): estimating pitch "
+                 "and roll in the chassis frame beats a one-module frame, because it separates shape change from "
+                 "world motion.")
 
     def update(i):
         t = i / FPS
@@ -89,14 +91,15 @@ def gif_flapping():
     ax.set_title("Flapping-wing flight: each wingbeat shakes the body on top of the slow flight motion", fontsize=10)
     body = ax.add_patch(Ellipse((0, 0), 0.6, 0.18, color="#dce6f2", ec=BODY, zorder=4))
     wing, = ax.plot([], [], color=BODY, lw=3, zorder=5)
-    trail, = ax.plot([], [], color=ON, lw=1)
+    trail, = ax.plot([], [], color="0.6", lw=1)
     ax_s.plot(td, slow_f(td) + fast_f(td), color="0.75", lw=1, label="what a body-mounted IMU sees (slow + wingbeat)")
     ax_s.plot(td, slow_f(td), color=ON, lw=1.5, label="slow flight state the filter wants")
     cur, = ax_s.plot([], [], "o", color=WARN)
-    ax_s.set(xlim=(0, ts[-1]), xlabel="time (s, animation)", ylabel="pitch-like signal")
+    ax_s.set(xlim=(0, ts[-1]), ylim=(-0.65, 0.95), xlabel="time (s, animation)", ylabel="pitch-like signal")
     ax_s.legend(loc="upper right", fontsize=7.5, frameon=False)
-    caption(fig, "Qian et al. (arXiv 2504.20809, preprint) report that flapping-induced oscillations challenge "
-                 "conventional estimators, and separate the fast oscillation from the slow dynamics before an EKF.")
+    caption(fig, "Bar = wing; grey line = body path (includes the wingbeat bob); red dot = current time. Qian et al. "
+                 "(arXiv 2504.20809, preprint) report that flapping-induced oscillations challenge conventional "
+                 "estimators; they separate the fast oscillation from the slow dynamics before an EKF.")
     # body bob: height peaks mid-downstroke (wing flap angle beta = 0.9 sin(w t) is 0 and falling at w t = pi)
     xs, ys = 0.6 * ts, 0.3 + 0.5 * slow - 0.12 * np.cos(2 * np.pi * f_beat * ts)
     L_wing = 0.6  # fixed wing length
@@ -126,7 +129,7 @@ def gif_cpg_phase():
     MISTIMED = 104
     fig, (ax_c, ax_t) = plt.subplots(1, 2, figsize=(9.0, 4.4), gridspec_kw=dict(width_ratios=[1, 1.6]))
     fig.subplots_adjust(left=0.03, right=0.98, top=0.86, bottom=0.25, wspace=0.15)
-    fig.suptitle("CPG / gait phase: the gait phase is a quantity to estimate, not a known schedule", fontsize=10.5)
+    fig.suptitle("CPG (central pattern generator) phase: a contact at the wrong phase is flagged", fontsize=10.5)
     ax_c.set_aspect("equal")
     ax_c.set(xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
     ax_c.axis("off")
@@ -145,9 +148,9 @@ def gif_cpg_phase():
     ev_ok, = ax_t.plot([], [], "|", color="darkgreen", ms=18, mew=3)
     ev_bad, = ax_t.plot([], [], "|", color=WARN, ms=18, mew=3)
     flag = ax_t.text(0.98, 0.95, "", transform=ax_t.transAxes, ha="right", va="top", color=WARN, fontweight="bold")
-    caption(fig, "Szadkowski, Prágr & Faigl (2021): a CPG synchronized to sensor events acts as a phase estimator and "
-                 "flags a contact that arrives at the wrong phase (red). The repo's docs instead assume the schedule is "
-                 "known.")
+    caption(fig, "Dial and sawtooth: oscillator phase (25 frames per cycle). Shaded sector: expected contact phase "
+                 "(±2 frames). Ticks: contact events, green on time, red early (frame 104). Szadkowski, Prágr & Faigl "
+                 "(2021): a CPG synchronized to sensor events acts as a phase estimator and flags such a contact.")
 
     def update(i):
         phi = (omega * i) % (2 * np.pi)

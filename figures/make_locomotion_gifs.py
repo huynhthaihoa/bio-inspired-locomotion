@@ -86,8 +86,9 @@ def gif_bounce():
     ball, = ax.plot([], [], "o", color="tab:blue", ms=12, mec="black")
     arrow = [None]
     label = ax.text(0.98, 0.95, "", transform=ax.transAxes, ha="right", va="top", fontsize=10, fontweight="bold")
-    caption(fig, "Arrow = vertical velocity (scaled). At contact v_z jumps from down to up (v_z → −0.85·v_z): "
-                 "the 'reset' a filter must carry its covariance through.")
+    caption(fig, "Blue = path so far, grey = full path, red arrow = vertical velocity v_z (scaled). At contact "
+                 "v_z flips from down to up (v_z → −0.85·v_z), a discrete 'reset' that a filter must carry its "
+                 "covariance through.")
 
     def update(i):
         k = frames[i]
@@ -96,7 +97,7 @@ def gif_bounce():
         if arrow[0] is not None:
             arrow[0].remove()
         arrow[0] = ax.annotate("", xy=(X[k, 0], X[k, 2] + 0.08 * X[k, 5]), xytext=(X[k, 0], X[k, 2]),
-                               arrowprops=dict(arrowstyle="->", color=SLIP, lw=2))
+                               arrowprops=dict(arrowstyle="->", color=SLIP, lw=2), annotation_clip=False)
         near = X[k, 2] < 0.25
         label.set_text("CONTACT: velocity flips" if near else ("falling" if X[k, 5] < 0 else "rising"))
         label.set_color(SLIP if near else "0.3")
@@ -129,7 +130,7 @@ def gif_tumbling_bounce():
     fig = plt.figure(figsize=(7.5, 5.6))
     ax = fig.add_subplot(projection="3d")
     fig.subplots_adjust(left=0.0, right=1.0, top=0.92, bottom=0.1)
-    ax.set_title("Tumbling rigid body (IMU inside) bouncing: it spins at a constant body rate the whole time",
+    ax.set_title("Tumbling rigid body bouncing: it spins at a constant body rate the whole time",
                  fontsize=10)
     lo, hi = P.min(0) - 0.5, P.max(0) + 0.5
     ax.set(xlim=(lo[0], hi[0]), ylim=(lo[1], hi[1]), zlim=(0, 5.6), xlabel="x (m)", ylabel="y (m)", zlabel="z (m)")
@@ -140,8 +141,9 @@ def gif_tumbling_bounce():
     triad = [ax.plot([], [], [], color=c, lw=2.2)[0] for c in ("tab:red", "tab:green", "tab:blue")]
     label = fig.text(0.97, 0.88, "", ha="right", fontsize=10, fontweight="bold")
     recent = [-99]
-    caption(fig, "Box + body axes (red x, green y, blue z). Same bounce law on the vertical velocity, "
-                 "but the body keeps rotating, so the state lives on a Lie group (SE2(3)).")
+    caption(fig, "Purple box = body (drawn about 2.5x its real 0.6 x 0.4 m size), axes red x / green y / blue z, "
+                 "grey = path of its centre. Bounce law as for the point mass (v_z → −0.8·v_z, rotation untouched), "
+                 "so the state is orientation + velocity + position, a Lie group element (SE2(3)).")
 
     def update(i):
         k = frames[i]
@@ -188,8 +190,9 @@ def gif_inchworm():
     ax_v.plot(t, v, color="0.85")
     vline, = ax_v.plot([], [], color=MOVE, lw=2)
     ax_v.set(xlim=(0, t[-1]), ylim=(-0.01, 0.12), xlabel="time (s)", ylabel="v (m/s)")
-    caption(fig, "Shaded = anchor phase: v is exactly 0, so 'v = 0' (ZUPT) is a free, true measurement. "
-                 "During extend it would be false.")
+    caption(fig, "Gold = anchor (body bunched), teal = extend (body stretched); grey ticks = past anchor "
+                 "positions. In anchor the true v is exactly 0, so the zero-velocity update (ZUPT, measurement "
+                 "'v = 0') is correct there and would be false during extend.")
     starts = [k for k in range(len(t)) if is_anchor[k] and (k == 0 or not is_anchor[k - 1])]
 
     def update(k):
@@ -225,17 +228,17 @@ def gif_inchworm_slip(t_show=6.0):
     p, v, d, is_anchor, is_slip = x_true[:n, 0], x_true[:n, 1], d[:n], is_anchor[:n], is_slip[:n]
     t = np.arange(n) * dt
     quiet = np.abs(d) <= d_thr
-    rows = [("truth: v = 0", v == 0.0), ("schedule says anchor", is_anchor), ("sensor quiet", quiet)]
+    rows = [("truth: v = 0", v == 0.0), ("schedule says anchor", is_anchor), ("pad reading quiet", quiet)]
 
     fig, (ax, ax_v, ax_d, ax_g) = plt.subplots(4, 1, figsize=(7.5, 8.0),
                                                gridspec_kw=dict(height_ratios=[0.9, 1.0, 1.0, 0.9]))
-    fig.subplots_adjust(left=0.24, right=0.97, top=0.93, bottom=0.17, hspace=0.6)
+    fig.subplots_adjust(left=0.24, right=0.97, top=0.93, bottom=0.19, hspace=0.6)
     ax.set_xlim(p.min() - 0.05, p.max() + 0.05)
     ax.set_ylim(-0.3, 0.6)
     ax.set_yticks([])
     ax.axhline(0.0, color="saddlebrown", lw=3)
     ax.set_xlabel("position along the track (m)", fontsize=9)
-    ax.set_title("Inchworm with anchor slip: the schedule says 'still', the pad sensor disagrees", fontsize=10)
+    ax.set_title("Inchworm with anchor slip: the schedule says 'still', the pad reading disagrees", fontsize=10)
     body = ax.add_patch(Polygon([[0, 0]], closed=True, color=ANCHOR, ec="black"))
     label = ax.text(0.99, 0.95, "", transform=ax.transAxes, ha="right", va="top", fontsize=10, fontweight="bold")
 
@@ -259,10 +262,11 @@ def gif_inchworm_slip(t_show=6.0):
     ax_g.set_yticks(range(len(rows)))
     ax_g.set_yticklabels([r[0] for r in rows][::-1], fontsize=8)  # truth on top
     marks = [ax_g.plot([], [], "|", color=c, ms=10, mew=2)[0] for c in ("0.3", "tab:blue", "tab:orange")]
-    caption(fig, "Gold = scheduled anchor, red = slip pulse. During the slip the schedule still says anchor "
-                 "(so a schedule-gated ZUPT would be wrong), while the pad reading leaves the quiet band. At both "
-                 "ends of each extend the sensor is quiet although the body moves slowly, so a sensor-only gate "
-                 "would be wrong there; requiring both avoids both mistakes.")
+    caption(fig, "Gold band = scheduled anchor, red band = slip pulse (body slides backward). Grey band = quiet pad "
+                 "reading (|d| ≤ 1.5 mm/tick). In the slip the schedule still says anchor but the pad leaves the quiet "
+                 "band, so a schedule-only zero-velocity update (ZUPT) is wrong. At extend ends the pad is quiet "
+                 "while the body still creeps (0.025 m/s), so a pad-only gate is wrong there. Requiring both "
+                 "avoids almost all of these errors.")
 
     def update(k):
         sl = slice(0, k + 1)
@@ -293,7 +297,7 @@ def gif_inchworm_turning():
                                                               np.random.default_rng(0))
     frames = range(len(x_true))
     fig, ax = plt.subplots(figsize=(6.4, 5.6))
-    fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.18)
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.25)
     ax.set_aspect("equal")
     ax.set(xlim=(-0.08, 0.42), ylim=(-0.12, 0.33), xlabel="x (m)", ylabel="y (m)")
     ax.set_title("Planar inchworm: it turns only while extending", fontsize=10)
@@ -302,8 +306,10 @@ def gif_inchworm_turning():
     prints, = ax.plot([], [], "s", color="0.45", ms=4)
     arrow = [None]
     label = ax.text(0.02, 0.97, "", transform=ax.transAxes, ha="left", va="top", fontsize=10, fontweight="bold")
-    caption(fig, "Arrow = heading. Anchored: v = 0 and ω = 0 (ZUPT + ZARU true). Position alone shows the heading "
-                 "only while moving.")
+    caption(fig, "Arrow = heading (gold = anchored, teal = extending). Gray squares = anchor points; thin gray "
+                 "line = full path. Anchored, v = 0 and ω = 0 are exactly true (free zero-velocity and "
+                 "zero-angular-rate updates, ZUPT and ZARU). Only position is measured, so heading shows only in "
+                 "the direction of travel while moving.")
     starts = [k for k in frames if is_anchor[k] and (k == 0 or not is_anchor[k - 1])]
 
     def update(k):
@@ -330,8 +336,8 @@ def gif_friction_crawler():
     x_true, _ = m.generate_ground_truth_and_data(duration, dt, 0.2, 2.0 * np.pi / duration, sg, ss, 0.02,
                                                  np.random.default_rng(0))
     frames = range(0, len(x_true), 3)
-    fig, ax = plt.subplots(figsize=(6.4, 6.0))
-    fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.16)
+    fig, ax = plt.subplots(figsize=(6.4, 6.4))
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.24)
     ax.set_aspect("equal")
     c, r = x_true[:, :2].mean(0), 0.5 * np.ptp(x_true[:, :2], axis=0).max() + 0.25
     ax.set(xlim=(c[0] - r, c[0] + r), ylim=(c[1] - r, c[1] + r), xlabel="x (m)", ylabel="y (m)")
@@ -341,8 +347,10 @@ def gif_friction_crawler():
     body = ax.add_patch(Ellipse((0, 0), 0.16, 0.08, color="0.6", ec="black", zorder=4))
     noise = ax.add_patch(Ellipse((0, 0), 2 * 2 * sg, 2 * 2 * ss, fill=False, ec=SLIP, lw=2, zorder=5))
     arrow = [None]
-    caption(fig, f"Red ellipse = slip noise, fixed to the body (5:1, enlarged 2x): {ss} m/s sideways vs {sg} m/s forward.\n"
-                 "As the crawler turns, the ellipse turns with it in the world: a fixed-orientation Q is wrong after a turn.")
+    caption(fig, f"Black arrow = heading; teal = path so far, light gray = full path (wiggles = random slip). "
+                 f"Red ellipse = slip noise, fixed to the body: {ss} m/s sideways vs {sg} m/s forward (5:1; drawn "
+                 "enlarged, not to scale). As the crawler turns, the ellipse turns with it in the world, so noise "
+                 "with a fixed orientation is wrong after a turn.")
 
     def update(i):
         k = frames[i]
@@ -390,8 +398,9 @@ def gif_hexapod_gaits():
         nose, = ax.plot([], [], "^", color="#4a5a70", ms=6, zorder=4)
         arts[g] = (ax, legs, dots, body, nose)
     slip_txt = fig.text(0.5, 0.115, "", ha="center", fontsize=10, color=SLIP, fontweight="bold")
-    caption(fig, "Camera follows the body. Red foot = L2 slipping sideways (4-8 s): it disagrees with the other feet, "
-                 "which is how the per-foot test catches it.")
+    caption(fig, "Camera follows the body. Black = foot down (a velocity sensor). White = foot in the air (no "
+                 "information). Red = foot down but L2 slipping sideways (4-8 s): it disagrees with the other "
+                 "feet, so the per-foot test catches it.")
 
     def update(i):
         k = frames[i]
@@ -442,8 +451,10 @@ def gif_hexapod_3d():
     legs = [ax.plot([], [], [], color="0.35", lw=1.5)[0] for _ in range(6)]
     dots = [ax.plot([], [], [], "o", ms=6, mec="black")[0] for _ in range(6)]
     fwd = ax.plot([], [], [], color="tab:red", lw=2.2)[0]
-    caption(fig, "Filled = stance foot, its world position is in the filter state (SE_{K+2}(3)). Nothing here senses "
-                 "north,\nso the heading (yaw) can't be measured: a good filter keeps its yaw uncertainty large.")
+    caption(fig, "Camera follows the body. Box = body, red line = its forward axis, light gray line = ground path. "
+                 "Black = foot down (fixed in the world, so its position can go in the filter state). White = foot "
+                 "in the air (drawn lifted for illustration, not simulated). There is no compass, so yaw (heading) "
+                 "cannot be measured: a good filter lets its yaw uncertainty grow.")
 
     def update(i):
         k = frames[i]

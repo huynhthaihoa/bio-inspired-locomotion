@@ -10,6 +10,7 @@ tracking:
   bounce            saltation_matrix_ekf.generate_ground_truth_and_data
   tumbling_bounce   invariant_saltation_ekf.generate_ground_truth_and_data
   inchworm          inchworm_zupt_ekf.generate_ground_truth_and_data
+  inchworm_slip     inchworm_slip_gate_ekf.generate_ground_truth_and_data (first 6 s)
   inchworm_turning  inchworm_zupt_zaru_ekf.generate_ground_truth_and_data
   friction_crawler  friction_anisotropic_ekf.generate_ground_truth_and_data
   hexapod_gaits     hexapod_gait_ekf.simulate_body_trajectory + simulate_feet
@@ -207,6 +208,83 @@ def gif_inchworm():
     save(fig, update, len(frames), "inchworm")
 
 
+# ----------------------------------------------------------------------------- 3b. inchworm with anchor slip
+
+def gif_inchworm_slip(t_show=6.0):
+    try:
+        import inchworm_slip_gate_ekf as m
+    except ImportError:
+        print(f"  skipped: {SIM} has no use_numpy/inchworm_slip_gate_ekf.py (bump the submodule or set "
+              "STATE_ESTIMATION_SIM_DIR)")
+        return
+    dt, sens_std = 0.05, 0.0005
+    d_thr = 3.0 * sens_std
+    x_true, _, d, is_anchor, _, is_slip, _ = m.generate_ground_truth_and_data(
+        20.0, dt, 1.0, 1.0, 0.2, 0.1, 0.02, sens_std, 0.5, 0.08, 0.6, np.random.default_rng(0))
+    n = int(round(t_show / dt)) + 1  # script defaults, seed 0; show the first cycles (first slip pulse at 2.0 s)
+    p, v, d, is_anchor, is_slip = x_true[:n, 0], x_true[:n, 1], d[:n], is_anchor[:n], is_slip[:n]
+    t = np.arange(n) * dt
+    quiet = np.abs(d) <= d_thr
+    rows = [("truth: v = 0", v == 0.0), ("schedule says anchor", is_anchor), ("sensor quiet", quiet)]
+
+    fig, (ax, ax_v, ax_d, ax_g) = plt.subplots(4, 1, figsize=(7.5, 8.0),
+                                               gridspec_kw=dict(height_ratios=[0.9, 1.0, 1.0, 0.9]))
+    fig.subplots_adjust(left=0.24, right=0.97, top=0.93, bottom=0.17, hspace=0.6)
+    ax.set_xlim(p.min() - 0.05, p.max() + 0.05)
+    ax.set_ylim(-0.3, 0.6)
+    ax.set_yticks([])
+    ax.axhline(0.0, color="saddlebrown", lw=3)
+    ax.set_xlabel("position along the track (m)", fontsize=9)
+    ax.set_title("Inchworm with anchor slip: the schedule says 'still', the pad sensor disagrees", fontsize=10)
+    body = ax.add_patch(Polygon([[0, 0]], closed=True, color=ANCHOR, ec="black"))
+    label = ax.text(0.99, 0.95, "", transform=ax.transAxes, ha="right", va="top", fontsize=10, fontweight="bold")
+
+    edges = np.diff(np.concatenate([[False], is_slip, [False]]).astype(int))
+    for a in (ax_v, ax_d, ax_g):
+        for k in range(n):
+            if is_anchor[k] and (k == 0 or not is_anchor[k - 1]):
+                a.axvspan(t[k], t[k] + 1.0, color=ANCHOR, alpha=0.2, lw=0)
+        for s0, s1 in zip(np.where(edges == 1)[0], np.where(edges == -1)[0]):
+            a.axvspan(t[s0], t[s1 - 1] + dt, color=SLIP, alpha=0.25, lw=0)
+        a.set_xlim(0, t[-1])
+    ax_v.plot(t, v, color="0.85")
+    vline, = ax_v.plot([], [], color=MOVE, lw=2)
+    ax_v.set(ylim=(-0.1, 0.12), ylabel="true v (m/s)")
+    ax_d.axhspan(-d_thr * 1e3, d_thr * 1e3, color="0.6", alpha=0.3, lw=0)
+    ax_d.text(t[-1], d_thr * 1e3, "quiet band ", ha="right", va="bottom", fontsize=8, color="0.35")
+    ax_d.plot(t, d * 1e3, color="0.85")
+    dline, = ax_d.plot([], [], color="tab:orange", lw=1.6)
+    ax_d.set(ylim=(-5.5, 6.5), ylabel="pad reading\nd (mm/tick)")
+    ax_g.set(ylim=(-0.6, 2.6), xlabel="time (s)")
+    ax_g.set_yticks(range(len(rows)))
+    ax_g.set_yticklabels([r[0] for r in rows][::-1], fontsize=8)  # truth on top
+    marks = [ax_g.plot([], [], "|", color=c, ms=10, mew=2)[0] for c in ("0.3", "tab:blue", "tab:orange")]
+    caption(fig, "Gold = scheduled anchor, red = slip pulse. During the slip the schedule still says anchor "
+                 "(so a schedule-gated ZUPT would be wrong), while the pad reading leaves the quiet band. At both "
+                 "ends of each extend the sensor is quiet although the body moves slowly, so a sensor-only gate "
+                 "would be wrong there; requiring both avoids both mistakes.")
+
+    def update(k):
+        sl = slice(0, k + 1)
+        w, h = (0.035, 0.25) if is_anchor[k] else (0.07, 0.12)
+        body.set_xy([[p[k] - w, 0], [p[k] + w, 0], [p[k], h]])
+        col = SLIP if is_slip[k] else (ANCHOR if is_anchor[k] else MOVE)
+        body.set_color(col)
+        body.set_edgecolor("black")
+        txt, tc = (("SLIPPING (v < 0)", SLIP) if is_slip[k] else
+                   ("ANCHORED (v = 0)", "darkgoldenrod") if is_anchor[k] else ("EXTENDING", "darkgreen"))
+        label.set_text(txt)
+        label.set_color(tc)
+        vline.set_data(t[sl], v[sl])
+        dline.set_data(t[sl], d[sl] * 1e3)
+        for row, (mk, (_, flag)) in enumerate(zip(marks, rows)):
+            idx = np.flatnonzero(flag[sl])
+            mk.set_data(t[idx], np.full(idx.size, len(rows) - 1 - row))
+        return []
+
+    save(fig, update, n, "inchworm_slip")
+
+
 # ----------------------------------------------------------------------------- 4. inchworm turning (ZARU)
 
 def gif_inchworm_turning():
@@ -392,6 +470,7 @@ def gif_hexapod_3d():
 
 
 GIFS = {"bounce": gif_bounce, "tumbling_bounce": gif_tumbling_bounce, "inchworm": gif_inchworm,
+        "inchworm_slip": gif_inchworm_slip,
         "inchworm_turning": gif_inchworm_turning, "friction_crawler": gif_friction_crawler,
         "hexapod_gaits": gif_hexapod_gaits, "hexapod_3d": gif_hexapod_3d}
 

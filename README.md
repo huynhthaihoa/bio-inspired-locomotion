@@ -16,7 +16,7 @@ It builds on the docs and simulations of [`state-estimation-simulations`](https:
 
 Motion-only GIFs (no filters drawn).
 
-**From the simulations' own truth generators** (`figures/make_locomotion_gifs.py`, script defaults, seed 0): `bounce`, `tumbling_bounce`, `inchworm`, `inchworm_turning`, `friction_crawler`, `hexapod_gaits`, `hexapod_3d`. These need the simulations submodule (see Setup).
+**From the simulations' own truth generators** (`figures/make_locomotion_gifs.py`, script defaults, seed 0): `bounce`, `tumbling_bounce`, `inchworm`, `inchworm_slip`, `inchworm_turning`, `friction_crawler`, `hexapod_gaits`, `hexapod_3d`. These need the simulations submodule (see Setup). `inchworm_slip` needs `inchworm_slip_gate_ekf.py`, which is newer than the pinned commit: until the submodule is bumped, generate it with `STATE_ESTIMATION_SIM_DIR` pointing at a checkout that has it.
 
 **Other locomotion types** (`figures/make_other_locomotion_gifs.py`; code split into `other_common.py` and `other_group_{a,b,c}.py`): `hopping`, `biped`, `wheel_legged`, `snake`, `flapping`, `cpg_phase`, `fish`, `perching`, `climbing`. `hopping` is a real spring-loaded inverted pendulum (SLIP) simulation written here; all others are **illustrations** with prescribed motion, not simulations, and each figure says which it is. They are standalone (no sibling repo needed).
 
@@ -40,7 +40,7 @@ From this directory:
 
 ```bash
 uv run python figures/make_other_locomotion_gifs.py            # all nine, or name one: hopping biped ...
-uv run python figures/make_locomotion_gifs.py                  # all seven, or name one: bounce ...
+uv run python figures/make_locomotion_gifs.py                  # all eight, or name one: bounce ...
 ```
 
 `make_locomotion_gifs.py` looks for the simulations in `$STATE_ESTIMATION_SIM_DIR`, then the submodule, then a sibling `../state-estimation-simulations`, and stops with a message if none exists.

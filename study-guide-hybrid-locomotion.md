@@ -35,6 +35,10 @@ Most confusion comes from mixing up which of the three rows applies.
 
   ![Inchworm, 1D](figures/inchworm.gif)
 
+- **Inchworm anchor slip (§6):** the schedule can say "anchored" while the anchor slides. A pad sensor sees the slide, but it is also quiet while the body creeps at the ends of each extend. Trust "v = 0" only when both agree.
+
+  ![Inchworm with anchor slip: schedule vs. pad sensor](figures/inchworm_slip.gif)
+
 - **Inchworm ZARU (§5):** with position-only sensing, you learn the heading only by watching which way the body moves. While it stands still, the heading uncertainty can only grow, unless you also assert "I'm not turning".
 
   ![Planar inchworm turning while extending](figures/inchworm_turning.gif)
@@ -52,7 +56,7 @@ Most confusion comes from mixing up which of the three rows applies.
   ![3D hexapod, tripod gait](figures/hexapod_3d.gif)
 
 
-*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. Regenerate: `uv run python figures/make_locomotion_gifs.py [name]` from this repo's root.*
+*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. `inchworm_slip` shows the first 6 s and adds the simulated pad reading, the input the gate uses. Regenerate: `uv run python figures/make_locomotion_gifs.py [name]` from this repo's root.*
 
 ## 3. Predict first, then run
 

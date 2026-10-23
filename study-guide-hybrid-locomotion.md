@@ -60,7 +60,7 @@ Most confusion comes from mixing up which of the three rows applies.
 
 ## 3. Predict first, then run
 
-Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-19. Results are judged by **NEES** (normalized estimation error squared): averaged over trials, it equals the state dimension (2 for a 2-state filter) when the filter is consistent. Add `--out <file>.png` to save a figure instead of opening a window.
+Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-22. Results are judged by **NEES** (normalized estimation error squared): averaged over trials, it equals the state dimension (2 for a 2-state filter) when the filter is consistent. Add `--out <file>.png` to save a figure instead of opening a window.
 
 ```bash
 # Saltation: contact detected late or noisily? (doc §8)

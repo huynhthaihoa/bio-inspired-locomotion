@@ -277,9 +277,19 @@ Not relevant to switched locomotion, or too little documented (pages read throug
 
 ## 4. Shortlist for a next doc
 
-1. **Hopping:** peer-reviewed salted-KF result on an ASLIP hopper with an uncertain touchdown guard; builds directly on `hybrid_saltation_ekf.md` (bounce → spring stance + uncertain ground).
-2. **CPG / gait-phase estimation:** addresses the "known schedule" assumption every locomotion doc makes; literature is split between robotics (CPG) and prosthetics (EKF).
-3. **Biped:** reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first.
+**Updated 2026-10-23:** this ranking now weighs fit with the CTU lab's robots (§3) first and literature fit (§1) second. The lab's website refused the connection on 2026-10-23 and DBLP blocked access, so nothing newer than §3 (2026-10-19) was checked. The previous ranking (2026-10-19) used literature fit only: hopping, then CPG / gait phase, then biped.
+
+| # | Type | Lab fit (§3) | Repo fit | Verdict |
+| --- | --- | --- | --- | --- |
+| 1 | **CPG / gait-phase estimation** (hexapod) | Hexapods are the lab's main platform (HAntR, PhantomX, SCARAB, Sub-T, Daisy). The lab's own paper uses a CPG as a phase estimator (§2.6). HAntR's contact detector is a threshold on servo position error (§3.2). | Addresses the "known schedule" assumption every locomotion doc makes; reuses `hexapod_gait_ekf.md` and its `--detect-time-noise-std`. | **Next new doc.** No CPG + Kalman filter paper was found for a legged robot, so the filter design would be ours; label it as such. |
+| 2 | **Inchworm, next step** (extension, not a new type) | The lab's most recent line (AMAM 2025, ICRA 2026). Kalman fusion of pad optical sensors, motor and IMU data is the authors' stated future work (§3.1). MinchW (magnetic anchor) is undocumented. | Extends the 1D slip-gate toy (below) to 2D turning (the paper's bicycle model) with one sensor per pad. | Closest to the lab's current work; do it alongside #1 or right after. |
+| 3 | Hopping (SLIP) | No lab hopper found. | Strongest literature: uncertain-guard salted KF on an ASLIP hopper; builds directly on `hybrid_saltation_ekf.md`. | Best choice on literature fit alone. |
+| 4 | Snake / scale-friction crawling | The inchworm is snake-like with friction scales (§3.1); no snake robot found. | Different core problem: separating shape change from body motion (§2.4). | Low |
+| 5 | Biped | No lab biped found. | Reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first. | Low |
+| 6 | Wheel-legged | Wheeled (Husky, Hunter SE) and legged robots on the index, no wheel-legged one found. | New "which sensor per mode" question (§2.3). | Low |
+| — | Flapping, fish, perching, climbing | None at the lab; its fixed-wing UAVs are not flapping (**inference** from names only, §3.3). | Thin or no estimation literature. | Dropped |
+
+**Before writing #1:** read Faigl & Čížek (2019) for the detector's timing behavior, and run the adaptive-oscillator search (both in §5).
 
 Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_ekf.py`: add anchor slip, and gate ZUPT by a measured pad displacement instead of the known schedule (CTU robot, §3.1). **Done as a toy:** [`inchworm_slip_gate_ekf.py` and doc §6](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md#6-side-extension-anchor-slip-and-a-measured-gate). In it the schedule alone is badly overconfident during slip (slip-window NEES about 47), a sensor veto on top of the schedule removes most of that (about 3.5), and a sensor-only gate leaks at the ends of each extend phase. A real pad sensor reads only while its pad is on the ground, which matches the schedule-and-sensor policy, not the sensor-only ones (my reading, not the authors').
 

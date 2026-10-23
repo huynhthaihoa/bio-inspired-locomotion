@@ -97,9 +97,10 @@ def gif_flapping():
     cur, = ax_s.plot([], [], "o", color=WARN)
     ax_s.set(xlim=(0, ts[-1]), ylim=(-0.65, 0.95), xlabel="time (s, animation)", ylabel="pitch-like signal")
     ax_s.legend(loc="upper right", fontsize=7.5, frameon=False)
-    caption(fig, "Bar = wing; grey line = body path (includes the wingbeat bob); red dot = current time. Qian et al. "
-                 "(arXiv 2504.20809, preprint) report that flapping-induced oscillations challenge conventional "
-                 "estimators; they separate the fast oscillation from the slow dynamics before an EKF.")
+    caption(fig, "Bar = wing; grey line (top) = body path (includes the wingbeat bob); red dot = current time. Qian et "
+                 "al. (arXiv 2504.20809, preprint) report that flapping-induced oscillations challenge conventional "
+                 "estimators; they separate the fast wingbeat oscillation from the slow flight dynamics before "
+                 "feeding a learned internal model.")
     # body bob: height peaks mid-downstroke (wing flap angle beta = 0.9 sin(w t) is 0 and falling at w t = pi)
     xs, ys = 0.6 * ts, 0.3 + 0.5 * slow - 0.12 * np.cos(2 * np.pi * f_beat * ts)
     L_wing = 0.6  # fixed wing length

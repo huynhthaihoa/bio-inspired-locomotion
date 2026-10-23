@@ -122,8 +122,8 @@ def gif_tumbling_bounce():
     frames = range(0, len(P), 4)
     impacts = set(impact_ticks)
 
-    # a flat box (0.6 x 0.4 x 0.15 m), so the tumbling is visible
-    hx, hy, hz = 0.75, 0.5, 0.19  # drawn about 2.5x larger than the 0.6 x 0.4 m body so it is visible
+    # a flat box so the tumbling is visible; its size is arbitrary (the simulation has no body size)
+    hx, hy, hz = 0.75, 0.5, 0.19
     corners = np.array([[sx * hx, sy * hy, sz * hz] for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)])
     edges = [(a, b) for a in range(8) for b in range(a + 1, 8) if np.sum(corners[a] != corners[b]) == 1]
 
@@ -141,7 +141,7 @@ def gif_tumbling_bounce():
     triad = [ax.plot([], [], [], color=c, lw=2.2)[0] for c in ("tab:red", "tab:green", "tab:blue")]
     label = fig.text(0.97, 0.88, "", ha="right", fontsize=10, fontweight="bold")
     recent = [-99]
-    caption(fig, "Purple box = body (drawn about 2.5x its real 0.6 x 0.4 m size), axes red x / green y / blue z, "
+    caption(fig, "Purple box = body (size arbitrary, drawn only to show the rotation), axes red x / green y / blue z, "
                  "grey = path of its centre. Bounce law as for the point mass (v_z → −0.8·v_z, rotation untouched), "
                  "so the state is orientation + velocity + position, a Lie group element (SE2(3)).")
 
@@ -263,10 +263,11 @@ def gif_inchworm_slip(t_show=6.0):
     ax_g.set_yticklabels([r[0] for r in rows][::-1], fontsize=8)  # truth on top
     marks = [ax_g.plot([], [], "|", color=c, ms=10, mew=2)[0] for c in ("0.3", "tab:blue", "tab:orange")]
     caption(fig, "Gold band = scheduled anchor, red band = slip pulse (body slides backward). Grey band = quiet pad "
-                 "reading (|d| ≤ 1.5 mm/tick). In the slip the schedule still says anchor but the pad leaves the quiet "
-                 "band, so a schedule-only zero-velocity update (ZUPT) is wrong. At extend ends the pad is quiet "
-                 "while the body still creeps (0.025 m/s), so a pad-only gate is wrong there. Requiring both "
-                 "avoids almost all of these errors.")
+                 "reading (|d| ≤ 1.5 mm/tick; the pad measures foot displacement). A zero-velocity update (ZUPT) "
+                 "tells the filter 'v = 0' and is wrong whenever the body moves. In these 6 s: schedule alone is wrong "
+                 "on 12 ticks (the whole slip); pad alone on 8 (the slip's ends, plus the edges of each extend, where "
+                 "the body creeps at 0.025 m/s but the pad is still quiet); both together on 4 (the slow start "
+                 "and end of the slip).")
 
     def update(k):
         sl = slice(0, k + 1)

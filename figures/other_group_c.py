@@ -107,8 +107,9 @@ def gif_perching():
     claws = [ax.plot([], [], color="black", lw=2, solid_capstyle="round", zorder=4)[0] for _ in range(2)]
     st = status(ax, "", "black")
     caption(fig, "Dark bars above the body: rotors (edge-on); black lines: claws. A 2026 aerial-manipulation survey "
-                 "describes contact as turning the drone into a hybrid system (thrust only before, reaction forces "
-                 "after). Treating the perched phase as zero velocity (ZUPT) is our inference, not from a source.")
+                 "says contact may turn the drone into a hybrid system; our reading: thrust acts before contact, "
+                 "reaction forces after. Treating the perched phase as zero velocity (a zero-velocity update, ZUPT) "
+                 "is also our inference, not from a source.")
 
     # rotor phase: constant rate until contact, then an exponentially decaying rate; the blade (seen edge-on) has
     # half-length ~|cos(phase)| and stops short (phase ends at an odd multiple of pi/2)

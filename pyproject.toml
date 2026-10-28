@@ -12,4 +12,10 @@ dependencies = [
     "scipy",
     "matplotlib",
     "pillow",
+    "state-estimation-simulations",
 ]
+
+# The simulation modules that figures/make_locomotion_gifs.py imports now import each other as the package
+# `state_estimation_simulations`, so the submodule is installed (editable) into this environment.
+[tool.uv.sources]
+state-estimation-simulations = { path = "third_party/state-estimation-simulations", editable = true }

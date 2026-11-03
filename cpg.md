@@ -59,11 +59,11 @@ Don't mix up the two pendulums in walking. Legs also swing like real physical pe
 
 | Approach | Who decides when a foot is down? | Used in |
 | --- | --- | --- |
-| **Known schedule** | A fixed timetable, assumed correct | Every locomotion doc in `state-estimation-simulations` today |
-| **CPG** | An oscillator that adapts its timing to the sensors | The CTU hexapod paper (§4) |
-| **Pure detector** | A sensor threshold at each instant, no rhythm model | HAntR's servo position-error contact detector (lit review §3.2) |
+| **Known schedule** | A fixed timetable, assumed correct | Most locomotion docs in `state-estimation-simulations`; the `schedule` baseline of `gait_phase_ekf.md` |
+| **CPG** | An oscillator that adapts its timing to the sensors | The CTU hexapod paper (§4); `gait_phase_ekf.md`'s `cpg` approach (much simplified) |
+| **Pure detector** | A sensor threshold at each instant, no rhythm model | HAntR's servo position-error contact detector (lit review §3.2); `gait_phase_ekf.md`'s `detector` approach |
 
-The repo's filters assume the first row: they know exactly when each contact starts and ends. Replacing that with a CPG makes the gait phase an uncertain quantity the filter has to estimate. That is the planned CPG / gait-phase doc (lit review §4, #1). This connection is our framing, not a claim from a paper.
+Most of the repo's filters assume the first row: they know exactly when each contact starts and ends. Replacing that with a CPG makes the gait phase an uncertain quantity the filter has to estimate. That is [`gait_phase_ekf.md`](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/gait_phase_ekf.md) (lit review §4, #1). This connection is our framing, not a claim from a paper.
 
 ## References
 

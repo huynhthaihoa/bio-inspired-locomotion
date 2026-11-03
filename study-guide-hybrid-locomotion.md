@@ -7,8 +7,11 @@ Docs (**EKF** = extended Kalman filter):
 - [hybrid_saltation_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hybrid_saltation_ekf.md)
 - [invariant_saltation_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/invariant_saltation_ekf.md)
 - [inchworm_zupt_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_zupt_ekf.md)
+- [inchworm_two_pad_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_two_pad_ekf.md)
+- [inchworm_two_pad_fusion_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/inchworm_two_pad_fusion_ekf.md)
 - [friction_anisotropic_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/friction_anisotropic_ekf.md)
 - [hexapod_gait_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hexapod_gait_ekf.md)
+- [gait_phase_ekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/gait_phase_ekf.md)
 - [hexapod_contact_inekf](https://github.com/huynhthaihoa/state-estimation-simulations/blob/main/docs/filtering/hexapod_contact_inekf.md)
 
 ## 1. One frame for all of them
@@ -18,8 +21,8 @@ A legged or crawling robot switches mode: anchored/moving, foot down/up, before/
 | What switches | What changes | Doc |
 | --- | --- | --- |
 | **The state itself** | Velocity jumps (bounce); the covariance must be carried through the jump | hybrid_saltation_ekf, invariant_saltation_ekf |
-| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another | inchworm_zupt_ekf (**ZUPT**, zero-velocity update; **ZARU**, zero angular-rate update, §5; anchor slip and a pad-sensor gate, §6) |
-| **Which sensors you have** | Planted feet = velocity measurements; the gait sets how many | hexapod_gait_ekf, hexapod_contact_inekf |
+| **What you may assume** | "v = 0" (or "ω = 0") is true in one phase, false in another; "the gripping pad stays put" holds until it slips | inchworm_zupt_ekf (**ZUPT**, zero-velocity update; **ZARU**, zero angular-rate update, §5; anchor slip and a pad-sensor gate, §6), inchworm_two_pad_ekf, inchworm_two_pad_fusion_ekf |
+| **Which sensors you have** | Planted feet = velocity measurements; the gait sets how many, and when a foot lands may itself be uncertain | hexapod_gait_ekf, hexapod_contact_inekf, gait_phase_ekf |
 | (no switch) | Motion noise depends on direction | friction_anisotropic_ekf |
 
 Most confusion comes from mixing up which of the three rows applies.
@@ -43,6 +46,14 @@ Most confusion comes from mixing up which of the three rows applies.
 
   ![Planar inchworm turning while extending](figures/inchworm_turning.gif)
 
+- **Two-pad inchworm:** nothing measures position, so the robot knows where it is only through the pad that grips. "It stays put" is free information until the pad slips, and then the whole body slides with it.
+
+  ![Two-pad inchworm: one pad grips while the other moves](figures/inchworm_two_pad.gif)
+
+- **Two-pad inchworm, both pad sensors:** two witnesses. A real slip moves the whole body, so both pad sensors report it; a faulty sensor speaks alone. Agreement means slip, disagreement means a fault.
+
+  ![Both pad readings: a slip makes them agree, a fault makes them disagree](figures/inchworm_two_pad_fusion.gif)
+
 - **Friction:** the robot's pad grips along its forward axis and slips sideways, so the noise ellipse is fixed to the body and rotates with the heading in the world.
 
   ![Crawler with a body-fixed slip ellipse](figures/friction_crawler.gif)
@@ -51,16 +62,20 @@ Most confusion comes from mixing up which of the three rows applies.
 
   ![Hexapod gaits: tripod, ripple, wave](figures/hexapod_gaits.gif)
 
+- **Gait phase:** the robot knows when it lifts a foot, not when the foot lands. Trust the timetable and a foot still in the air is read as a speedometer: a confident, wrong velocity.
+
+  ![Hexapod with late touchdowns and a blocked leg](figures/gait_phase.gif)
+
 - **Hexapod contact InEKF (invariant EKF):** nothing the robot senses tells it where north is, so yaw is unobservable. A good filter keeps reporting large yaw uncertainty instead of becoming confident.
 
   ![3D hexapod, tripod gait](figures/hexapod_3d.gif)
 
 
-*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. `inchworm_slip` shows the first 6 s and adds the simulated pad reading, the input the gate uses. Regenerate: `uv run python figures/make_locomotion_gifs.py [name]` from this repo's root.*
+*Motion-only GIFs (true motion, no filters) from each simulation's own truth generator at its defaults, seed 0. `inchworm_slip` shows the first 6 s and adds the simulated pad reading, the input the gate uses. `inchworm_two_pad_fusion` shows 8-17 s and adds both pad readings; `gait_phase` shows 8-16 s and adds the blocked leg's stance and contact-detector triggers. Regenerate: `uv run python figures/make_locomotion_gifs.py [name]` from this repo's root.*
 
 ## 3. Predict first, then run
 
-Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-10-22. Results are judged by **NEES** (normalized estimation error squared): averaged over trials, it equals the state dimension (2 for a 2-state filter) when the filter is consistent. Add `--out <file>.png` to save a figure instead of opening a window.
+Write down the expected outcome before running. Run from `third_party/state-estimation-simulations/` (the simulations submodule; see the README). Flags checked on 2026-11-03. Results are judged by **NEES** (normalized estimation error squared): averaged over trials, it equals the state dimension (2 for a 2-state filter) when the filter is consistent. Add `--out <file>.png` to save a figure instead of opening a window.
 
 ```bash
 # Saltation: contact detected late or noisily? (doc §8)
@@ -92,7 +107,7 @@ When the result surprises you, that's usually the doc's point. Example: at its d
 
 ## 4. Reading habits
 
-1. **Watch the GIF before the math.** Each doc embeds one or two from `assets/`. For each method, find the moment it goes wrong.
+1. **Watch the GIF before the math.** Each doc embeds one or more from `assets/`. For each method, find the moment it goes wrong.
 2. **Read NEES as honesty.** Above the expected value = overconfident; below = conservative (underconfident). Every doc here judges success this way.
 3. **For any surprising number, find the doc's control run** (no motion, noise covering the ramps, ...), which isolates the cause.
 4. **Keep three lists while reading: switch → assumption → consequence.** That is the content of this set of docs.

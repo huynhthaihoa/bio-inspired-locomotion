@@ -12,12 +12,15 @@ tracking:
   inchworm          inchworm_zupt_ekf.generate_ground_truth_and_data
   inchworm_slip     inchworm_slip_gate_ekf.generate_ground_truth_and_data (first 6 s)
   inchworm_turning  inchworm_zupt_zaru_ekf.generate_ground_truth_and_data
+  inchworm_two_pad  inchworm_two_pad_ekf.simulate
+  inchworm_two_pad_fusion  inchworm_two_pad_fusion_ekf.simulate_trial (8-17 s; plus both pad readings)
   friction_crawler  friction_anisotropic_ekf.generate_ground_truth_and_data
   hexapod_gaits     hexapod_gait_ekf.simulate_body_trajectory + simulate_feet
+  gait_phase        gait_phase_ekf.simulate_trial (8-16 s; plus the detector triggers)
   hexapod_3d        hexapod_contact_inekf.simulate_trial
 
-Usage (from the bio-inspired-locomotion repo root; needs the simulations: the git
-submodule (`git submodule update --init`), a sibling checkout, or STATE_ESTIMATION_SIM_DIR):
+Usage (from the bio-inspired-locomotion repo root; needs the simulations submodule
+(`git submodule update --init`), which `uv sync` installs as the package `state_estimation_simulations`):
     uv run python figures/make_locomotion_gifs.py          # all
     uv run python figures/make_locomotion_gifs.py bounce   # one
 '''
@@ -34,17 +37,6 @@ from matplotlib import animation
 from matplotlib.patches import Ellipse, Polygon
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# Where the simulations live, first match wins: $STATE_ESTIMATION_SIM_DIR, the pinned git submodule,
-# then a sibling checkout next to this repo.
-ROOT = os.path.dirname(HERE)
-_candidates = [os.environ.get("STATE_ESTIMATION_SIM_DIR"),
-               os.path.join(ROOT, "third_party", "state-estimation-simulations"),
-               os.path.join(os.path.dirname(ROOT), "state-estimation-simulations")]
-SIM = next((c for c in _candidates if c and os.path.isdir(os.path.join(c, "use_numpy"))), None)
-if SIM is None:
-    sys.exit("state-estimation-simulations not found. Run `git submodule update --init` in the repo root, "
-             "or set STATE_ESTIMATION_SIM_DIR.")
-sys.path[:0] = [os.path.join(SIM, "use_numpy"), SIM]
 
 FPS, DPI = 15, 70
 ANCHOR, MOVE, SLIP = "#e9c46a", "#2a9d8f", "#d1495b"
@@ -67,7 +59,7 @@ def caption(fig, text):
 # ----------------------------------------------------------------------------- 1. bounce
 
 def gif_bounce():
-    import saltation_matrix_ekf as m
+    from state_estimation_simulations.use_numpy import saltation_matrix_ekf as m
     x_true, _ = m.generate_ground_truth_and_data(5.0, 0.02, 0.85, 9.81, 5.0, [1.0, 0.5], 0.03,
                                                  np.random.default_rng(0))
     X = np.array(x_true)
@@ -109,8 +101,8 @@ def gif_bounce():
 # ----------------------------------------------------------------------------- 2. tumbling bounce
 
 def gif_tumbling_bounce():
-    import invariant_saltation_ekf as m
-    from lie_utils import so3_exp, se23_make, se23_parts
+    from state_estimation_simulations.use_numpy import invariant_saltation_ekf as m
+    from state_estimation_simulations.use_numpy.lie_utils import so3_exp, se23_make, se23_parts
     g_vec = np.array([0.0, 0.0, -9.81])
     X0 = se23_make(so3_exp(np.array([0.2, -0.1, 0.3])), np.array([1.0, 0.5, 0.0]), np.array([0.0, 0.0, 5.0]))
     X_true, _, _, _, impact_ticks = m.generate_ground_truth_and_data(
@@ -166,7 +158,7 @@ def gif_tumbling_bounce():
 # ----------------------------------------------------------------------------- 3. inchworm (1D)
 
 def gif_inchworm():
-    import inchworm_zupt_ekf as m
+    from state_estimation_simulations.use_numpy import inchworm_zupt_ekf as m
     x_true, _, is_anchor, _ = m.generate_ground_truth_and_data(10.0, 0.05, 1.0, 1.0, 0.2, 0.1, 0.02,
                                                               np.random.default_rng(0))
     p, v = x_true[:, 0], x_true[:, 1]
@@ -214,12 +206,7 @@ def gif_inchworm():
 # ----------------------------------------------------------------------------- 3b. inchworm with anchor slip
 
 def gif_inchworm_slip(t_show=6.0):
-    try:
-        import inchworm_slip_gate_ekf as m
-    except ImportError:
-        print(f"  skipped: {SIM} has no use_numpy/inchworm_slip_gate_ekf.py (bump the submodule or set "
-              "STATE_ESTIMATION_SIM_DIR)")
-        return
+    from state_estimation_simulations.use_numpy import inchworm_slip_gate_ekf as m
     dt, sens_std = 0.05, 0.0005
     d_thr = 3.0 * sens_std
     x_true, _, d, is_anchor, _, is_slip, _ = m.generate_ground_truth_and_data(
@@ -293,7 +280,7 @@ def gif_inchworm_slip(t_show=6.0):
 # ----------------------------------------------------------------------------- 4. inchworm turning (ZARU)
 
 def gif_inchworm_turning():
-    import inchworm_zupt_zaru_ekf as m
+    from state_estimation_simulations.use_numpy import inchworm_zupt_zaru_ekf as m
     x_true, _, is_anchor, _ = m.generate_ground_truth_and_data(10.0, 0.05, 1.0, 1.0, 0.2, 0.1, 0.3, 0.02,
                                                               np.random.default_rng(0))
     frames = range(len(x_true))
@@ -329,10 +316,135 @@ def gif_inchworm_turning():
     save(fig, update, len(frames), "inchworm_turning")
 
 
+# ----------------------------------------------------------------------------- 4b. two-pad inchworm
+
+def gif_inchworm_two_pad():
+    from state_estimation_simulations.use_numpy import inchworm_two_pad_ekf as m
+    dt, t_phase, t_ramp, v_slip = 0.05, 1.0, 0.2, 0.08
+    rng = np.random.default_rng(0)  # script defaults, same draw order as its main(): slip pulses, then the run
+    episodes = m.draw_slip_episodes(20, t_phase, 0.6, 0.5, rng)
+    x_true, _, _, _, back = m.simulate(400, dt, t_phase, t_ramp, 0.1, 0.15, 0.3, episodes, v_slip, 0.01, 0.02,
+                                       0.0005, 0.001, 0.001, rng)
+    b, f = x_true[:, m.B], x_true[:, m.F]
+    n = len(x_true)
+    back = np.append(back, back[-1])  # anchored pad of the interval each tick starts
+    slip = np.array([m.slip_speed(k * dt, episodes, t_ramp, v_slip) > 0.0 for k in range(n)])
+    frames = range(0, n, 2)
+
+    fig, ax = plt.subplots(figsize=(6.4, 6.6))
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.92, bottom=0.25)
+    ax.set_aspect("equal")
+    ax.set(xlim=(-0.08, 0.5), ylim=(-0.06, 0.64), xlabel="x (m)", ylabel="y (m)")
+    ax.set_title("Two-pad inchworm: one pad grips while the other moves; no position fix", fontsize=10)
+    ax.plot(b[:, 0], b[:, 1], color="0.88", lw=1)
+    ax.plot(f[:, 0], f[:, 1], color="0.88", lw=1)
+    body, = ax.plot([], [], color="0.45", lw=5, solid_capstyle="round", zorder=3)
+    anchor_pad, = ax.plot([], [], "s", ms=11, mec="black", zorder=5)
+    moving_pad, = ax.plot([], [], "o", ms=9, color=MOVE, mec="black", zorder=5)
+    label = ax.text(0.02, 0.97, "", transform=ax.transAxes, ha="left", va="top", fontsize=10, fontweight="bold")
+    caption(fig, f"Square = anchored pad (gold; red while it slips), circle = moving pad; gray bar = body. Extend: "
+                 f"the back pad grips, the body lengthens and turns. Contract: the front pad grips, the back pad "
+                 f"catches up. In a slip pulse ({len(episodes)} in these 20 s) the gripping pad slides backward and "
+                 "the whole body slides with it. Nothing measures position, so the filter knows where the robot is "
+                 "only through the anchored pad: \"it stays put\", or its pad sensor's reading.")
+
+    def update(i):
+        k = frames[i]
+        a, mv = (b[k], f[k]) if back[k] else (f[k], b[k])
+        body.set_data([b[k, 0], f[k, 0]], [b[k, 1], f[k, 1]])
+        anchor_pad.set_data([a[0]], [a[1]])
+        anchor_pad.set_markerfacecolor(SLIP if slip[k] else ANCHOR)
+        moving_pad.set_data([mv[0]], [mv[1]])
+        if slip[k]:
+            label.set_text("SLIP: the whole body slides back")
+            label.set_color(SLIP)
+        else:
+            label.set_text("EXTEND: back pad grips, body turns" if back[k] else "CONTRACT: front pad grips")
+            label.set_color("darkgoldenrod")
+        return []
+
+    save(fig, update, len(frames), "inchworm_two_pad")
+
+
+# ----------------------------------------------------------------------------- 4c. two-pad inchworm, both pad sensors
+
+def gif_inchworm_two_pad_fusion(t0=8.0, t1=17.0):
+    from state_estimation_simulations.use_numpy import inchworm_two_pad_fusion_ekf as m
+    args = m.build_parser().parse_args([])  # script defaults, seed 0, same draw order as its main()
+    rng = np.random.default_rng(args.seed)
+    setup = m.build_setup(args, rng)
+    tr = m.simulate_trial(args, setup, rng)
+    dt, x_true, back = args.dt, tr["x_true"], tr["back"]
+    b, f = x_true[:, m.B], x_true[:, m.F]
+    length = np.linalg.norm(f - b, axis=1)
+    sign = np.where(back, 1.0, -1.0)  # +1: the front pad moves, -1: the back pad moves
+    model = np.array([m.commanded_change(tr["e_cmd"][k], length[k]) for k in range(len(back))])
+    d_a = tr["d_a"][:, 0] * 1e3  # along the body axis, mm per tick
+    d_m = (tr["d_m"][:, 0] - sign * model[:, 0]) * 1e3
+    k0, k1 = int(round(t0 / dt)), int(round(t1 / dt))
+    t = np.arange(len(back)) * dt + 0.5 * dt  # reading k covers tick k to k + 1
+    slip = np.array([m.slip_speed(k * dt, setup["episodes"], args.t_ramp, args.v_slip) > 0.0
+                     for k in range(len(x_true))])
+
+    fig, (ax, ax_a, ax_m) = plt.subplots(3, 1, figsize=(7.5, 8.2), gridspec_kw=dict(height_ratios=[1.5, 1, 1]))
+    fig.subplots_adjust(left=0.13, right=0.97, top=0.95, bottom=0.25, hspace=0.45)
+    sl = slice(k0, k1 + 1)
+    lo, hi = np.minimum(b[sl].min(0), f[sl].min(0)) - 0.03, np.maximum(b[sl].max(0), f[sl].max(0)) + 0.03
+    ax.set_aspect("equal")
+    ax.set(xlim=(lo[0] - 0.12, hi[0] + 0.12), ylim=(lo[1], hi[1]), xlabel="x (m)", ylabel="y (m)")
+    ax.set_title("Two-pad inchworm, both pad sensors: a slip makes them agree, a fault makes them disagree",
+                 fontsize=9)
+    ax.plot(b[sl, 0], b[sl, 1], color="0.88", lw=1)
+    ax.plot(f[sl, 0], f[sl, 1], color="0.88", lw=1)
+    body, = ax.plot([], [], color="0.45", lw=5, solid_capstyle="round", zorder=3)
+    anchor_pad, = ax.plot([], [], "s", ms=11, mec="black", zorder=5)
+    moving_pad, = ax.plot([], [], "o", ms=9, color=MOVE, mec="black", zorder=5)
+    label = ax.text(0.02, 0.95, "", transform=ax.transAxes, ha="left", va="top", fontsize=10, fontweight="bold")
+
+    fault_style = {m.SPIKE: ("tab:purple", "spike"), m.DROPOUT: ("0.55", "dropout")}
+    lines = []
+    for a, y, faults, name in ((ax_a, d_a, tr["fault_a"], "anchored pad's reading"),
+                               (ax_m, d_m, tr["fault_m"], "moving pad's reading\nminus the commanded stroke")):
+        for k in range(k0, k1):
+            if slip[k]:
+                a.axvspan(k * dt, (k + 1) * dt, color=SLIP, alpha=0.25, lw=0)
+            if faults[k] in fault_style:
+                a.axvspan(k * dt, (k + 1) * dt, ymin=0.9, ymax=1.0, color=fault_style[faults[k]][0], lw=0)
+        a.plot(t[k0:k1], y[k0:k1], color="0.85")
+        lines.append((a.plot([], [], color="tab:orange", lw=1.6)[0], y))
+        a.set(xlim=(t0, t1), ylim=(-9.5, 4.0), ylabel="mm per tick")
+        a.set_title(name, fontsize=9, loc="left")
+    ax_m.set_xlabel("time (s)")
+    handles = [ax_a.plot([], [], "s", color=col, label=f"{txt} on this sensor")[0] for col, txt in fault_style.values()]
+    handles.append(ax_a.plot([], [], "s", color=SLIP, alpha=0.4, label="slip pulse")[0])
+    fig.legend(handles=handles, loc="center", bbox_to_anchor=(0.5, 0.17), fontsize=8, ncol=3, frameon=False)
+    caption(fig, "Along-body readings, backward < 0 (gray = whole window, orange = so far). In a slip (red band) the "
+                 "whole body slides, so both readings dip together. A spike (purple bar) adds a fake backward "
+                 "motion to one sensor; a dropout (gray bar) makes it read 0, so the moving pad's reading minus the "
+                 "stroke dips as if it slipped. Only one panel moves: the sensors disagree. Square = anchored pad "
+                 "(red while slipping), circle = moving pad.")
+
+    def update(i):
+        k = k0 + i
+        back_k = back[min(k, len(back) - 1)]
+        a, mv = (b[k], f[k]) if back_k else (f[k], b[k])
+        body.set_data([b[k, 0], f[k, 0]], [b[k, 1], f[k, 1]])
+        anchor_pad.set_data([a[0]], [a[1]])
+        anchor_pad.set_markerfacecolor(SLIP if slip[k] else ANCHOR)
+        moving_pad.set_data([mv[0]], [mv[1]])
+        label.set_text("SLIP" if slip[k] else ("EXTEND" if back_k else "CONTRACT"))
+        label.set_color(SLIP if slip[k] else "darkgoldenrod")
+        for ln, y in lines:
+            ln.set_data(t[k0:k], y[k0:k])
+        return []
+
+    save(fig, update, k1 - k0 + 1, "inchworm_two_pad_fusion")
+
+
 # ----------------------------------------------------------------------------- 5. friction crawler
 
 def gif_friction_crawler():
-    import friction_anisotropic_ekf as m
+    from state_estimation_simulations.use_numpy import friction_anisotropic_ekf as m
     duration, dt, sg, ss = 20.0, 0.05, 0.02, 0.1
     x_true, _ = m.generate_ground_truth_and_data(duration, dt, 0.2, 2.0 * np.pi / duration, sg, ss, 0.02,
                                                  np.random.default_rng(0))
@@ -373,7 +485,7 @@ def gif_friction_crawler():
 # ----------------------------------------------------------------------------- 6. hexapod gaits (planar)
 
 def gif_hexapod_gaits():
-    import hexapod_gait_ekf as m
+    from state_estimation_simulations.use_numpy import hexapod_gait_ekf as m
     dt, n_steps, tpc = 0.02, 600, 60
     x_true = m.simulate_body_trajectory(n_steps, dt, np.array([0.1, 0.0, 0.2]), 0.05, 0.1, np.random.default_rng(0))
     slip_leg = m.LEG_NAMES.index("L2")
@@ -428,11 +540,88 @@ def gif_hexapod_gaits():
     save(fig, update, len(frames), "hexapod_gaits")
 
 
+# ----------------------------------------------------------------------------- 6b. gait phase (uncertain touchdowns)
+
+def gif_gait_phase(t0=8.0, t1=16.0):
+    from state_estimation_simulations.use_numpy import gait_phase_ekf as m
+    from state_estimation_simulations.use_numpy.hexapod_gait_ekf import NOMINAL_FOOT_OFFSETS, rot
+    args = m.build_parser().parse_args([])  # script defaults, seed 0
+    x_true, _, r, _, flags, info = m.simulate_trial(args, np.random.default_rng(args.seed))
+    dt, true, cmd = args.dt, flags["oracle"], info["stance_cmd"]
+    leg = m.LEG_NAMES.index(args.blocked_leg)
+    k0, k1 = int(round(t0 / dt)), int(round(t1 / dt))
+    frames = range(k0, k1 + 1, 2)
+    t = np.arange(len(x_true)) * dt
+
+    fig, (ax, ax_g) = plt.subplots(2, 1, figsize=(7.0, 7.6), gridspec_kw=dict(height_ratios=[2.2, 1]))
+    fig.subplots_adjust(left=0.2, right=0.97, top=0.93, bottom=0.21, hspace=0.3)
+    ax.set_aspect("equal")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title("Hexapod, tripod gait: liftoffs are commanded, touchdowns come late or early", fontsize=9.5)
+    legs = [ax.plot([], [], color="0.4", lw=1.5)[0] for _ in range(6)]
+    dots = [ax.plot([], [], "o", ms=8, mec="black", mew=1)[0] for _ in range(6)]
+    body = ax.add_patch(Ellipse((0, 0), 0.34, 0.2, color="#dce6f2", ec="#4a5a70", zorder=3))
+    nose, = ax.plot([], [], "^", color="#4a5a70", ms=6, zorder=4)
+    names = [ax.text(0, 0, n, fontsize=7, ha="center", va="center", color="0.3") for n in m.LEG_NAMES]
+    label = ax.text(0.02, 0.03, "", transform=ax.transAxes, ha="left", va="bottom", fontsize=10, fontweight="bold",
+                    color=SLIP)
+
+    def bars(flag, y, color):
+        on = np.diff(np.concatenate([[0], flag[k0:k1 + 1].astype(int), [0]]))
+        spans = [(t[k0 + a], (b - a) * dt) for a, b in zip(np.flatnonzero(on == 1), np.flatnonzero(on == -1))]
+        ax_g.broken_barh(spans, (y - 0.3, 0.6), color=color)
+
+    bars(cmd[:, leg], 2, "0.6")
+    bars(true[:, leg], 1, "#1f1f1f")
+    for (i, _, _, _), trig in zip(info["steps"], info["triggers"]):
+        for k in trig:
+            if i == leg and k0 <= k <= k1:
+                ax_g.plot(t[k], 0, "|", ms=14, mew=2, color="black")
+    ax_g.axvspan(args.blocked_start, args.blocked_end, color=SLIP, alpha=0.1, lw=0)
+    ax_g.set(xlim=(t0, t1), ylim=(-0.7, 2.7), xlabel="time (s)")
+    ax_g.set_yticks([0, 1, 2])
+    ax_g.set_yticklabels(["detector triggers", "true stance", "commanded stance"], fontsize=8)
+    ax_g.set_title(f"{args.blocked_leg} only (light red: blocked {args.blocked_start:g}-{args.blocked_end:g} s)",
+                   fontsize=9, loc="left")
+    cursor = ax_g.axvline(t0, color=MOVE, lw=1.5)
+    caption(fig, "Black = foot on the ground, white = in the air, red = the schedule says down but the foot has not "
+                 "landed yet (read as planted, it would feed the filter a swinging foot's velocity). Touchdowns drift "
+                 f"later over the run and vary with the ground; {args.blocked_leg} lands {args.blocked_delay:g} s late "
+                 "in its blocked window. Bottom: the contact detector fires a short delay after each true "
+                 "touchdown (it also fires falsely early in some swing-downs, none on this leg in this window).")
+
+    def update(i):
+        k = frames[i]
+        p, th = x_true[k, :2], x_true[k, 2]
+        Rk = rot(th)
+        ax.set(xlim=(p[0] - 0.4, p[0] + 0.4), ylim=(p[1] - 0.3, p[1] + 0.3))
+        body.set_center(p)
+        body.set_angle(np.degrees(th))
+        tip = p + Rk @ np.array([0.17, 0.0])
+        nose.set_data([tip[0]], [tip[1]])
+        late = False
+        for j in range(6):
+            foot = p + Rk @ r[k, j]
+            hip = p + Rk @ (0.55 * NOMINAL_FOOT_OFFSETS[j])
+            legs[j].set_data([hip[0], foot[0]], [hip[1], foot[1]])
+            dots[j].set_data([foot[0]], [foot[1]])
+            waiting = cmd[k, j] and not true[k, j]
+            late |= waiting
+            dots[j].set_markerfacecolor("#1f1f1f" if true[k, j] else (SLIP if waiting else "white"))
+            names[j].set_position(p + Rk @ (0.3 * NOMINAL_FOOT_OFFSETS[j]))
+        label.set_text("scheduled down, still in the air" if late else "")
+        cursor.set_xdata([t[k], t[k]])
+        return []
+
+    save(fig, update, len(frames), "gait_phase")
+
+
 # ----------------------------------------------------------------------------- 7. hexapod 3D (contact InEKF)
 
 def gif_hexapod_3d():
-    import hexapod_contact_inekf as m
-    from hexapod_gait_ekf import NOMINAL_FOOT_OFFSETS
+    from state_estimation_simulations.use_numpy import hexapod_contact_inekf as m
+    from state_estimation_simulations.use_numpy.hexapod_gait_ekf import NOMINAL_FOOT_OFFSETS
     cfg = m.Config()
     trial = m.simulate_trial(cfg, ("tripod",), np.random.default_rng(0))
     R, p = trial.R, trial.p
@@ -483,8 +672,9 @@ def gif_hexapod_3d():
 
 GIFS = {"bounce": gif_bounce, "tumbling_bounce": gif_tumbling_bounce, "inchworm": gif_inchworm,
         "inchworm_slip": gif_inchworm_slip,
-        "inchworm_turning": gif_inchworm_turning, "friction_crawler": gif_friction_crawler,
-        "hexapod_gaits": gif_hexapod_gaits, "hexapod_3d": gif_hexapod_3d}
+        "inchworm_turning": gif_inchworm_turning, "inchworm_two_pad": gif_inchworm_two_pad,
+        "inchworm_two_pad_fusion": gif_inchworm_two_pad_fusion, "friction_crawler": gif_friction_crawler,
+        "hexapod_gaits": gif_hexapod_gaits, "gait_phase": gif_gait_phase, "hexapod_3d": gif_hexapod_3d}
 
 if __name__ == "__main__":
     for name in (sys.argv[1:] or GIFS):

@@ -5,7 +5,7 @@ description = "Study notes, literature review and motion GIFs for bio-inspired /
 readme = "README.md"
 requires-python = ">=3.11"
 # numpy + matplotlib (with Pillow, the GIF writer) are used by the figure scripts;
-# scipy is needed by the sibling state-estimation-simulations modules that
+# scipy is needed by the state-estimation-simulations (submodule) modules that
 # make_locomotion_gifs.py imports.
 dependencies = [
     "numpy",

@@ -16,7 +16,7 @@ It builds on the docs and simulations of [`state-estimation-simulations`](https:
 
 Motion-only GIFs (no filters drawn).
 
-**From the simulations' own truth generators** (`figures/make_locomotion_gifs.py`, script defaults, seed 0): `bounce`, `tumbling_bounce`, `inchworm`, `inchworm_slip`, `inchworm_turning`, `friction_crawler`, `hexapod_gaits`, `hexapod_3d`. These need the simulations submodule (see Setup).
+**From the simulations' own truth generators** (`figures/make_locomotion_gifs.py`, script defaults, seed 0): `bounce`, `tumbling_bounce`, `inchworm`, `inchworm_slip`, `inchworm_turning`, `inchworm_two_pad`, `inchworm_two_pad_fusion`, `friction_crawler`, `hexapod_gaits`, `gait_phase`, `hexapod_3d`. These need the simulations submodule (see Setup).
 
 **Other locomotion types** (`figures/make_other_locomotion_gifs.py`; code split into `other_common.py` and `other_group_{a,b,c}.py`): `hopping`, `biped`, `wheel_legged`, `snake`, `flapping`, `cpg_phase`, `fish`, `perching`, `climbing`. `hopping` is a real spring-loaded inverted pendulum (SLIP) simulation written here; all others are **illustrations** with prescribed motion, not simulations, and each figure says which it is. They are standalone (no sibling repo needed).
 
@@ -32,7 +32,7 @@ uv sync
 
 Already cloned without `--recurse-submodules`? Run `git submodule update --init`.
 
-The submodule in `third_party/state-estimation-simulations` is **pinned to a commit** (the one the GIFs were generated from). To bump it: `git submodule update --remote third_party/state-estimation-simulations`, regenerate the seven simulation GIFs, and commit the new pin together with them. The study guide's experiments run inside that folder (it has its own `pyproject.toml`).
+The submodule in `third_party/state-estimation-simulations` is **pinned to a commit** (the one the GIFs were generated from). To bump it: `git submodule update --remote third_party/state-estimation-simulations`, regenerate the eleven simulation GIFs, and commit the new pin together with them. The study guide's experiments run inside that folder (it has its own `pyproject.toml`).
 
 ## Regenerate the GIFs
 
@@ -40,10 +40,10 @@ From this directory:
 
 ```bash
 uv run python figures/make_other_locomotion_gifs.py            # all nine, or name one: hopping biped ...
-uv run python figures/make_locomotion_gifs.py                  # all eight, or name one: bounce ...
+uv run python figures/make_locomotion_gifs.py                  # all eleven, or name one: bounce ...
 ```
 
-`make_locomotion_gifs.py` looks for the simulations in `$STATE_ESTIMATION_SIM_DIR`, then the submodule, then a sibling `../state-estimation-simulations`, and stops with a message if none exists.
+`make_locomotion_gifs.py` imports the simulations as the package `state_estimation_simulations`, which `uv sync` installs from the submodule.
 
 GIFs are written into `figures/`. Pillow writes them, so no `ffmpeg` is needed.
 

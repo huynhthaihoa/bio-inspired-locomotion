@@ -160,7 +160,7 @@ First statement, written during the brainstorm: "The question is always what the
 
 ![Illustration: oscillator phase and a mistimed contact](figures/cpg_phase.gif)
 
-**What switches:** the gait phase becomes an estimated quantity instead of a known schedule (this repo's docs assume a known schedule).
+**What switches:** the gait phase becomes an estimated quantity instead of a known schedule (this repo's docs assumed a known schedule until `gait_phase_ekf.md`, 2026-10-24; see §4, #1).
 
 **Sources**
 - Szadkowski, R., Prágr, M., & Faigl, J. (2021). *Self-Learning Event Mistiming Detector Based on Central Pattern Generator*. Frontiers in Neurorobotics, 15. doi:10.3389/fnbot.2021.629652. **read (full text, first ~97%)**.
@@ -301,7 +301,7 @@ Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_e
 - [ ] Get full citations for the CWRKF and four-wheel-legged papers.
 - [x] Search adaptive-oscillator phase estimation for legged robots (done 2026-10-24, one targeted pass). No paper found that puts a CPG/oscillator phase into a Kalman filter on a legged robot; the gap holds as "not found". Nearest: Bledt et al. ICRA 2018 (Kalman filter with the *scheduled* phase as a contact prior, **snippet**); Szadkowski et al. 2021 (CPG entrained to touchdowns, no filter, **read**); phase EKFs exist only for prostheses/exoskeletons (Thatte et al. 2019, **read (abstract)**; Medrano et al. RA-L 2022 and T-RO 2023, state [phase, phase rate, ...], **read**). Adaptive oscillators: Ronsse et al. T-RO 2013 (**read**), designed for continuous signals, slow on abrupt transients.
 - [ ] Fish / perching / climbing: one targeted search each before discarding.
-- [ ] CTU: confirm the ICRA venue of *Adaptive Friction-based Inchworm-like Locomotion* (file name suggests ICRA 2026; the text I read does not name it) and look for a longer version.
+- [ ] CTU: look for a longer version of *Adaptive Friction-based Inchworm-like Locomotion*. Venue confirmed: 2026 IEEE International Conference on Robotics and Automation (ICRA), 9951-9958, https://doi.org/10.1109/ICRA57385.2026.11696680 (as cited in `inchworm_two_pad_ekf.md`).
 - [ ] Read Rišková, Kubík & Faigl, *Automated evaluation of anisotropic friction pads* (AMAM 2025, ref. [21] of the ICRA paper), for the friction doc.
 - [x] CTU: read Faigl & Čížek (Robotics and Autonomous Systems 116 (2019) 136-147, ref. [23] of the HAntR paper) for the position-feedback contact detector's timing behavior (done 2026-10-24, preprint <https://comrob.fel.cvut.cz/papers/ras19adaptive.pdf>, **read**). Femur joint only, swing-down phase only; adaptive threshold = free-swing model prediction + ε (3 ticks, < 1°); servo reads 16 ms on a standard serial link or 1 ms accelerated, control period 3 ms for tripod. **No detection latency or false/missed-contact rates are reported**; a leg that finds no ground runs to its final position (no search reflex).
 - [ ] CTU: read the T265-based hexapod exploration paper (Bayer & Faigl, ECMR 2019) for the camera-vs-leg-odometry contrast.

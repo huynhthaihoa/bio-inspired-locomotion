@@ -20,6 +20,19 @@ Searched `README.md` and `docs/` on 2026-10-19.
 | --- | --- | --- |
 | Bouncing point mass, tumbling rigid body (saltation, invariant saltation), inchworm (zero-velocity update, ZUPT; zero angular-rate update, ZARU, in that doc's §5), friction-anisotropic crawler, hexapod (planar leg odometry; 3D contact-aided invariant extended Kalman filter (InEKF)) | Snake (biological example of anisotropic friction, `friction_anisotropic_ekf.md`), quadruped (one mention and one reference, `hexapod_gait_ekf.md`), compliant ankles (a reference) | Biped, hopping, swimming, flapping flight, perching, wheel-legged, adhesive climbing, central pattern generator (CPG) / gait-phase estimation |
 
+**Update 2026-11-05:** since this search the repo added `gait_phase_ekf.md` (gait-phase estimation, 2026-10-24, §4) and six docs for CTU lab robots (§3), named here without links until they are pushed:
+
+| Doc | Robot | What it adds |
+| --- | --- | --- |
+| `hexapod_joint_kinematics_inekf.md` | HEBI Daisy | Joint encoders and joint offsets in the contact InEKF |
+| `gait_phase_torque_ekf.md` | HEBI joints (torque sensing) | A torque-based contact detector next to the position-error one |
+| `hexapod_redundant_leg_inekf.md` | HAntR (4 joints per leg) | Which joint offsets a walking hexapod can learn |
+| `hexapod_camera_fusion_inekf.md` | DARPA Sub-T hexapod, SCARAB (Intel RealSense T265) | Leg odometry plus a drifting tracking-camera pose |
+| `skid_steer_odometry_ekf.md` | Husky | Skid-steer wheel odometry with slip as a filter state (wheeled, not wheel-legged) |
+| `magnetic_inchworm_odometry_ekf.md` | MinchW | A magnetic climbing inchworm whose holding pad slides on a wall |
+
+Magnetic wall climbing is now covered; adhesive (gecko-style) climbing and the other types in the right column still are not.
+
 ## 1. Summary
 
 | Type | Estimation literature found | Evidence | Fit with the repo |
@@ -215,6 +228,8 @@ First statement, written during the brainstorm: "The question is always what the
 
 **Gap:** no state-estimation paper for adhesive climbers found. A related general result (legged robots, not climbing): foot-slip level correlates with InEKF error, Pearson r ≈ 0.68 (Lee & Kim 2026, arXiv 2601.18569, **read**, §II-B).
 
+**Update 2026-11-05:** one localization paper for a wall-climbing robot turned up while writing `magnetic_inchworm_odometry_ekf.md`: Zhang, Huang & Sun (2022), a robot on cylinder-shaped steel localized with an IMU and a fixed RGB-D camera, with two EKFs for attitude (**read (abstract)**; the abstract does not say how the robot adheres). The CTU MinchW magnetic climber is now simulated (§3.1).
+
 ## 3. Real robots for types the repo already covers: CTU Computational Robotics Lab
 
 Robots from the Computational Robotics Laboratory, Czech Technical University in Prague (<https://comrob.fel.cvut.cz/robots/>). Added 2026-10-19. Unlike §2, these are **existing** types in the repo (inchworm, hexapod), so the question is what each real robot adds to the existing docs.
@@ -223,7 +238,7 @@ Robots from the Computational Robotics Laboratory, Czech Technical University in
 
 ### 3.1 Inchworm robot (feeds the inchworm doc and the friction doc)
 
-Robot page: <https://comrob.fel.cvut.cz/robots/inchworm.html> (3D-printed, snake-like, "inchworm-inspired locomotion" with "flexible scales", Dynamixel XM-430; no sensors or papers listed). The two papers below are not linked from the page; I found them by search. A third robot on the index, **MinchW** ("Magnetic Inchworm"), has a page with only a name and a description line; nothing else is documented, so it is not reviewed.
+Robot page: <https://comrob.fel.cvut.cz/robots/inchworm.html> (3D-printed, snake-like, "inchworm-inspired locomotion" with "flexible scales", Dynamixel XM-430; no sensors or papers listed). The two papers below are not linked from the page; I found them by search. A third robot on the index, **MinchW** ("Magnetic Inchworm"), has a page with only a name and a description line; nothing else is documented, so it is not reviewed. **Update 2026-11-05:** a 2025 CTU bachelor's thesis documents it (Pham 2025, **read (full text)**): a hybrid electromagnet in each foot, six Dynamixel servos, and servo feedback only (no IMU, no external sensors); on a wall its heavy head makes it slide sideways. Simulated in `magnetic_inchworm_odometry_ekf.md`: servo odometry cannot see the slide, and an occasional external position fix is needed to bound the error.
 
 **What switches:** anchor (support) ↔ slide, repeated per gait phase: the same switch as `inchworm_zupt_ekf.md`, but the anchor is held by **friction** (passive anisotropic scales), not by a known-stationary segment.
 
@@ -265,7 +280,7 @@ Robot page: <https://comrob.fel.cvut.cz/robots/hantr.html> (in-house six-legged 
 
 **Link to the repo** (**inference**):
 - `hexapod_gait_ekf.md` studies contact-detection timing jitter (`--detect-time-noise-std`); HAntR's position-error threshold is a real detector of that kind. The paper does not report its timing error.
-- The lab's T265-based hexapod exploration papers localize with a tracking camera, while the repo's hexapod docs estimate from leg kinematics and an IMU. That contrast is a possible doc section; not read here beyond the PhantomX page's list.
+- The lab's T265-based hexapod exploration papers localize with a tracking camera, while the repo's hexapod docs estimate from leg kinematics and an IMU. That contrast is a possible doc section; not read here beyond the PhantomX page's list. **Done 2026-11-04** as `hexapod_camera_fusion_inekf.md` (a toy built from the T265 documentation and a published VIO evaluation; the lab's T265 papers were still not read).
 - The same lab wrote the CPG phase-estimator paper in §2.6 (Szadkowski, Prágr & Faigl, 2021); the DARPA Sub-T page lists it. The paper text does not say which robot it used, only "a six-legged hexapod".
 
 ### 3.3 Other robots on the index
@@ -273,7 +288,7 @@ Robot page: <https://comrob.fel.cvut.cz/robots/hantr.html> (in-house six-legged 
 Not relevant to switched locomotion, or too little documented (pages read through a summarizer):
 - Arms and hands: HEBI Lily (1, 2, hand), HEBI Daisy hand, UR5.
 - Not described on their pages: Mobot (empty page), Marvin (XL-320 servos, retired, no locomotion details).
-- Not opened: Husky, Hunter SE, Hotwing EVO 1200, Bormatec Maja XL (names only on the index).
+- Not opened: Husky, Hunter SE, Hotwing EVO 1200, Bormatec Maja XL (names only on the index). **Update 2026-11-05:** the Husky and Hunter SE pages were opened later; the Husky is simulated in `skid_steer_odometry_ekf.md` (the Hunter SE is not: no slip or error source was found for it).
 
 ## 4. Shortlist for a next doc
 
@@ -282,12 +297,12 @@ Not relevant to switched locomotion, or too little documented (pages read throug
 | # | Type | Lab fit (§3) | Repo fit | Verdict |
 | --- | --- | --- | --- | --- |
 | 1 | **CPG / gait-phase estimation** (hexapod) | Hexapods are the lab's main platform (HAntR, PhantomX, SCARAB, Sub-T, Daisy). The lab's own paper uses a CPG as a phase estimator (§2.6). HAntR's contact detector is a threshold on servo position error (§3.2). | Addresses the "known schedule" assumption every locomotion doc makes; reuses `hexapod_gait_ekf.md` and its `--detect-time-noise-std`. | **Done 2026-10-24** as `gait_phase_ekf.md` (a toy; liftoff known, touchdown timing uncertain; the filter design is ours, since no CPG + Kalman filter paper was found for a legged robot): a rhythm prior with an early-rejection window beats the schedule and a raw detector, and the window width, not the estimator type, decides. |
-| 2 | **Inchworm, next step** (extension, not a new type) | The lab's most recent line (AMAM 2025, ICRA 2026). Kalman fusion of pad optical sensors, motor and IMU data is the authors' stated future work (§3.1). MinchW (magnetic anchor) is undocumented. | Extends the 1D slip-gate toy (below) to 2D turning (the paper's bicycle model) with one sensor per pad. | Closest to the lab's current work. **Done 2026-10-23** as `inchworm_two_pad_ekf.md` (a toy; the filter design is ours): without a position fix only fusing the pad reading survives slip. **Moving pad's sensor done 2026-10-25** as `inchworm_two_pad_fusion_ekf.md`: a cross-check of the two pad sensors removes most sensor faults and keeps the filter consistent, as long as the moving pad's sensor is about as precise as the anchored one's. |
+| 2 | **Inchworm, next step** (extension, not a new type) | The lab's most recent line (AMAM 2025, ICRA 2026). Kalman fusion of pad optical sensors, motor and IMU data is the authors' stated future work (§3.1). MinchW (magnetic anchor) was undocumented at the time (now §3.1). | Extends the 1D slip-gate toy (below) to 2D turning (the paper's bicycle model) with one sensor per pad. | Closest to the lab's current work. **Done 2026-10-23** as `inchworm_two_pad_ekf.md` (a toy; the filter design is ours): without a position fix only fusing the pad reading survives slip. **Moving pad's sensor done 2026-10-25** as `inchworm_two_pad_fusion_ekf.md`: a cross-check of the two pad sensors removes most sensor faults and keeps the filter consistent, as long as the moving pad's sensor is about as precise as the anchored one's. |
 | 3 | Hopping (SLIP) | No lab hopper found. | Strongest literature: uncertain-guard salted KF on an ASLIP hopper; builds directly on `hybrid_saltation_ekf.md`. | Best choice on literature fit alone. |
 | 4 | Snake / scale-friction crawling | The inchworm is snake-like with friction scales (§3.1); no snake robot found. | Different core problem: separating shape change from body motion (§2.4). | Low |
 | 5 | Biped | No lab biped found. | Reuses `hexapod_contact_inekf.md` with one or two contacts; the impact/saltation angle needs a source first. | Low |
-| 6 | Wheel-legged | Wheeled (Husky, Hunter SE) and legged robots on the index, no wheel-legged one found. | New "which sensor per mode" question (§2.3). | Low |
-| — | Flapping, fish, perching, climbing | None at the lab; its fixed-wing UAVs are not flapping (**inference** from names only, §3.3). | Thin or no estimation literature. | Dropped |
+| 6 | Wheel-legged | Wheeled (Husky, Hunter SE) and legged robots on the index, no wheel-legged one found. The Husky's wheel odometry is now `skid_steer_odometry_ekf.md` (wheeled only). | New "which sensor per mode" question (§2.3). | Low |
+| — | Flapping, fish, perching, climbing | None at the lab, apart from the magnetic climber MinchW (now simulated, §3.1); its fixed-wing UAVs are not flapping (**inference** from names only, §3.3). | Thin or no estimation literature. | Dropped |
 
 **Before writing #1:** read Faigl & Čížek (2019) for the detector's timing behavior, and run the adaptive-oscillator search (both in §5).
 
@@ -332,6 +347,8 @@ Not a new doc but an extension of `inchworm_zupt_ekf.md` / `inchworm_zupt_zaru_e
 - Pectoral-fin robotic fish thesis: <https://udspace.udel.edu/items/0a0e6457-220f-4abf-8fe8-d446d9c16a9e>
 - Aerial manipulation survey: <https://arxiv.org/pdf/2607.04719>
 - Biologically inspired perching: <https://mountainscholar.org/items/b716c1aa-2fd1-44fa-a9a0-92c394c4cb9d>
+- Pham, S. B. (2025), *Design of Motion Strategies for a Magnetic Climbing Robot*, bachelor's thesis, CTU Prague (MinchW): <https://dspace.cvut.cz/handle/10467/125770>
+- Zhang, Huang & Sun (2022), *Localization of Wall Climbing Robot on Cylinder-Shaped Steel*, ICMAT 2022, 292-303: <https://doi.org/10.3233/ATDE221179>
 - Climbing detachment control: <https://www.mdpi.com/2076-3417/11/13/5860/xml>
 - SFU MENRVA climbing robots: <https://www.sfu.ca/menrva/some-projects/past-research-projects/climbing-robots.html>
 - CTU Computational Robotics Lab robots: <https://comrob.fel.cvut.cz/robots/>
